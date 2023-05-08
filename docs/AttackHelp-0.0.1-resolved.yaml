@@ -1,38 +1,41 @@
----
 openapi: 3.0.0
 info:
-  title: Swagger Attacka Help
   description: |
     This is a sample Attacka Help server.  You can find
     out more about protject at the our
     [discord](https://discord.gg/GXSGbyQ3) server
+  version: "0.0.1"
+  title: Swagger Attacka Help
   contact:
     email: sergeyjuly@gmail.com
   license:
     name: Apache 2.0 or MIT or any other (We should choose)
-    url: http://www.apache.org/licenses/LICENSE-2.0.html
-  version: 0.0.1
+    url: "http://www.apache.org/licenses/LICENSE-2.0.html"
 servers:
-- url: https://virtserver.swaggerhub.com/SERGEYJULY/AttackHelp/0.0.1
-  description: SwaggerHub API Auto Mocking
-- url: http://localhost:7000
-  description: For now only local server is possible
+  # Added by API Auto Mocking Plugin
+  # Added by API Auto Mocking Plugin
+  - description: SwaggerHub API Auto Mocking
+    url: https://virtserver.swaggerhub.com/SERGEYJULY/AttackHelp/0.0.1
+  - description: For now only local server is possible
+    url: "http://localhost:7000"
 tags:
-- name: cards
-  description: Card is the main entity of the information carier
-- name: users
-  description: Operations about user authorization
-- name: categories
-  description: It describes the operations which are possible to execute over the category entity
-- name: feedback
-  description: this is the endpoint through which the user can fill out the form and send feedback
-- name: slider
-  description: this is the endpoint to get the images for the main page slider.
+  - name: cards
+    description: Card is the main entity of the information carier.
+  - name: users
+    description: Operations about user authorization.
+  - name: categories
+    description: It describes the operations which are possible to execute over the category entity.
+  - name: feedback
+    description: This is the endpoint through which the user can fill out the form and send feedback.
+  - name: slider
+    description: This is the endpoint to get the images for the main page slider.
+  - name: partners
+    description: This is the endpoint through which you need to get partner logos to the main page. The administrator can also change them.
 paths:
   /cards:
     get:
       tags:
-      - cards
+        - cards
       summary: Returns the cards array
       operationId: getAllCards
       responses:
@@ -41,77 +44,50 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200'
-        "400":
-          description: It indicates that the server cannot or will not process the request due to an apparent client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/inline_response_400'
-        "404":
-          description: When an object is not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/inline_response_404'
-        "500":
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/inline_response_500'
+                type: object
+                properties:
+                  status: 
+                    type: integer
+                    example: 200
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Card"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalError" }
     post:
       tags:
-      - cards
+        - cards
       summary: Add a new card to the store
       operationId: addCard
       requestBody:
-        $ref: '#/components/requestBodies/Card'
+        $ref: "#/components/requestBodies/Card"
       responses:
-        "200":
-          description: A successful response.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/inline_response_200_1'
-        "400":
-          description: It indicates that the server cannot or will not process the request due to an apparent client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/inline_response_400'
-        "401":
-          description: It indicates that the client must authenticate itself to get the requested response.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/inline_response_401'
-        "500":
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/inline_response_500'
+        "200": {$ref: "#/components/responses/Success"}
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "500": { $ref: "#/components/responses/InternalError" }
       security:
-      - BearerAuth: []
+        - BearerAuth: []
+  
   /cards/findByCategory:
     get:
       tags:
-      - cards
+        - cards
       summary: Finds by category
       description: Multiple status values can be provided with comma separated strings
       operationId: findByCategory
       parameters:
-      - name: categories
-        in: query
-        description: Status values that need to be considered for filter
-        required: true
-        style: form
-        explode: true
-        schema:
-          type: array
-          items:
-            type: string
+        - name: categories
+          in: query
+          description: Status values that need to be considered for filter
+          required: true
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
       responses:
         "200":
           description: successful operation
@@ -120,313 +96,152 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Card'
-        "400":
-          description: It indicates that the server cannot or will not process the request due to an apparent client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/inline_response_400'
-        "404":
-          description: When an object is not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/inline_response_404'
-        "500":
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/inline_response_500'
+                  $ref: "#/components/schemas/Card"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalError" }
+  
   /cards/{id}:
     get:
       tags:
-      - cards
+        - cards
       summary: Find card by ID
       description: Returns a single card
       operationId: getCardById
       parameters:
-      - name: id
-        in: path
-        description: Unique identifier for the object
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-          format: uuid
+        - $ref: "#/components/parameters/id"
       responses:
         "200":
           description: successful operation
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Card'
-        "400":
-          description: It indicates that the server cannot or will not process the request due to an apparent client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/inline_response_400'
-        "404":
-          description: When an object is not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/inline_response_404'
-        "500":
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/inline_response_500'
+                $ref: "#/components/schemas/Card"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound"}
+        "500": { $ref: "#/components/responses/InternalError" }
     put:
       tags:
-      - cards
+        - cards
       summary: Update an existing card
       operationId: updateCard
       parameters:
-      - name: id
-        in: path
-        description: Unique identifier for the object
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-          format: uuid
+        - $ref: "#/components/parameters/id"
       requestBody:
-        $ref: '#/components/requestBodies/Card'
+        $ref: "#/components/requestBodies/Card"
       responses:
-        "200":
-          description: A successful response.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/inline_response_200_1'
-        "400":
-          description: It indicates that the server cannot or will not process the request due to an apparent client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/inline_response_400'
-        "401":
-          description: It indicates that the client must authenticate itself to get the requested response.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/inline_response_401'
-        "404":
-          description: When an object is not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/inline_response_404'
-        "500":
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/inline_response_500'
+        "200": {$ref: "#/components/responses/Success"}
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalError" }
       security:
-      - BearerAuth: []
+        - BearerAuth: []
     delete:
       tags:
-      - cards
+        - cards
       summary: Deletes a card
       operationId: deleteCard
       parameters:
-      - name: id
-        in: path
-        description: Unique identifier for the object
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-          format: uuid
+        - $ref: "#/components/parameters/id"
       responses:
-        "200":
-          description: A successful response.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/inline_response_200_1'
-        "400":
-          description: It indicates that the server cannot or will not process the request due to an apparent client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/inline_response_400'
-        "401":
-          description: It indicates that the client must authenticate itself to get the requested response.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/inline_response_401'
-        "404":
-          description: When an object is not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/inline_response_404'
-        "500":
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/inline_response_500'
+        "200": {$ref: "#/components/responses/Success"}
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalError" }
       security:
-      - BearerAuth: []
+        - BearerAuth: []
+  
   /users:
     post:
       tags:
-      - users
+        - users
       summary: Create user
       description: This can only be done by the logged in user.
       operationId: createUser
       requestBody:
-        description: Created user object
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/User'
+              $ref: "#/components/schemas/User"
+        description: Created user object
         required: true
       responses:
-        "200":
-          description: A successful response.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/inline_response_200_1'
-        "400":
-          description: It indicates that the server cannot or will not process the request due to an apparent client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/inline_response_400'
-        "401":
-          description: It indicates that the client must authenticate itself to get the requested response.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/inline_response_401'
-        "409":
-          description: If the object is already in the database and cannot be added because of some unique restriction. Or the same situation with editing of the some object. One more case the code can be returned if call delete operetion but there are some dependencies which conflict with the deleting.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/inline_response_409'
-        "500":
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/inline_response_500'
+        "200": { $ref: "#/components/responses/Success" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "500": { $ref: "#/components/responses/InternalError" }
       security:
-      - BearerAuth: []
+        - BearerAuth: []
+  
   /auth/login:
     get:
       tags:
-      - users
+        - users
       summary: Logs user into the system
       operationId: loginUser
       parameters:
-      - name: login
-        in: query
-        description: The users email for login
-        required: true
-        style: form
-        explode: true
-        schema:
-          type: string
-          format: email
-      - name: password
-        in: query
-        description: The password for login in clear text
-        required: true
-        style: form
-        explode: true
-        schema:
-          type: string
-          format: password
+        - name: login
+          in: query
+          description: The users email for login
+          required: true
+          schema:
+            type: string
+            format: email
+        - name: password
+          in: query
+          description: The password for login in clear text
+          required: true
+          schema:
+            type: string
+            format: password
       responses:
-        "200":
+        "200": 
           description: A successful response.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_2'
-        "400":
-          description: It indicates that the server cannot or will not process the request due to an apparent client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/inline_response_400'
-        "500":
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/inline_response_500'
+                type: object
+                properties:
+                  status: 
+                    type: integer
+                    example: 200
+                  data:
+                    $ref: "#/components/schemas/TokenPair"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "500": { $ref: "#/components/responses/InternalError" }
+  
   /auth/logout:
     get:
       tags:
-      - users
+        - users
       summary: Logs out current logged in user session
       operationId: logoutUser
       responses:
-        "200":
-          description: A successful response.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/inline_response_200_1'
-        "401":
-          description: It indicates that the client must authenticate itself to get the requested response.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/inline_response_401'
-        "500":
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/inline_response_500'
+        "200": { $ref: "#/components/responses/Success" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "500": { $ref: "#/components/responses/InternalError" }
       security:
-      - BearerAuth: []
+        - BearerAuth: []
+  
   /auth/change:
     get:
       tags:
-      - users
-      summary: Потрібно придумами яким чином змінювати пароль!!
+        - users
+      summary:  Потрібно придумами яким чином змінювати пароль!!
       operationId: changePassword
       responses:
-        "200":
-          description: A successful response.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/inline_response_200_1'
-        "401":
-          description: It indicates that the client must authenticate itself to get the requested response.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/inline_response_401'
-        "500":
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/inline_response_500'
+        "200": { $ref: "#/components/responses/Success" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "500": { $ref: "#/components/responses/InternalError" }
+  
   /categories:
     get:
       tags:
-      - categories
-      summary: Returns an array of the categories
+        - categories
+      summary:  Returns an array of the categories
       operationId: getAllCategories
       responses:
         "200":
@@ -434,180 +249,85 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_3'
-        "400":
-          description: It indicates that the server cannot or will not process the request due to an apparent client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/inline_response_400'
-        "404":
-          description: When an object is not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/inline_response_404'
-        "500":
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/inline_response_500'
+                type: object
+                properties:
+                  status: 
+                    type: integer
+                    example: 200
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Category"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalError" }
       security:
-      - BearerAuth: []
+        - BearerAuth: []
     post:
       tags:
-      - categories
-      summary: Endpoint adds the category
+        - categories
+      summary:  Endpoint adds the category
       operationId: addCategory
       requestBody:
-        $ref: '#/components/requestBodies/Category'
+       { $ref: "#/components/requestBodies/Category"}
       responses:
-        "200":
-          description: A successful response.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/inline_response_200_1'
-        "401":
-          description: It indicates that the client must authenticate itself to get the requested response.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/inline_response_401'
-        "409":
-          description: If the object is already in the database and cannot be added because of some unique restriction. Or the same situation with editing of the some object. One more case the code can be returned if call delete operetion but there are some dependencies which conflict with the deleting.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/inline_response_409'
-        "500":
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/inline_response_500'
+        "200": { $ref: "#/components/responses/Success" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "500": { $ref: "#/components/responses/InternalError" }
       security:
-      - BearerAuth: []
+        - BearerAuth: []
+  
   /categories/{id}:
     put:
       tags:
-      - categories
-      summary: Deletes the category
+        - categories
+      summary:  Deletes the category
       operationId: editeCategory
       parameters:
-      - name: id
-        in: path
-        description: Unique identifier for the object
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-          format: uuid
+        - $ref: "#/components/parameters/id"
       requestBody:
-        $ref: '#/components/requestBodies/Category'
+       { $ref: "#/components/requestBodies/Category"}
       responses:
-        "200":
-          description: A successful response.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/inline_response_200_1'
-        "401":
-          description: It indicates that the client must authenticate itself to get the requested response.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/inline_response_401'
-        "409":
-          description: If the object is already in the database and cannot be added because of some unique restriction. Or the same situation with editing of the some object. One more case the code can be returned if call delete operetion but there are some dependencies which conflict with the deleting.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/inline_response_409'
-        "500":
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/inline_response_500'
+        "200": { $ref: "#/components/responses/Success" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "500": { $ref: "#/components/responses/InternalError" }
       security:
-      - BearerAuth: []
+        - BearerAuth: []
     delete:
       tags:
-      - categories
-      summary: For the category editing
+        - categories
+      summary:  For the category editing
       operationId: deleteCategory
       parameters:
-      - name: id
-        in: path
-        description: Unique identifier for the object
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-          format: uuid
+        - $ref: "#/components/parameters/id"
       responses:
-        "200":
-          description: A successful response.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/inline_response_200_1'
-        "401":
-          description: It indicates that the client must authenticate itself to get the requested response.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/inline_response_401'
-        "409":
-          description: If the object is already in the database and cannot be added because of some unique restriction. Or the same situation with editing of the some object. One more case the code can be returned if call delete operetion but there are some dependencies which conflict with the deleting.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/inline_response_409'
-        "500":
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/inline_response_500'
+        "200": { $ref: "#/components/responses/Success" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "500": { $ref: "#/components/responses/InternalError" }
       security:
-      - BearerAuth: []
+        - BearerAuth: []
+  
   /feedback:
     post:
       tags:
-      - feedback
-      summary: Endpoint adds the category
+        - feedback
+      summary:  Endpoint adds the category
       operationId: addFeedback
       requestBody:
-        $ref: '#/components/requestBodies/Feedback'
+       { $ref: "#/components/requestBodies/Feedback"}
       responses:
-        "200":
-          description: A successful response.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/inline_response_200_1'
-        "409":
-          description: If the object is already in the database and cannot be added because of some unique restriction. Or the same situation with editing of the some object. One more case the code can be returned if call delete operetion but there are some dependencies which conflict with the deleting.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/inline_response_409'
-        "500":
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/inline_response_500'
+        "200": { $ref: "#/components/responses/Success" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "500": { $ref: "#/components/responses/InternalError" }
+  
   /slider:
     get:
       tags:
-      - slider
-      summary: Returns an array of the images for slider
+        - slider
+      summary:  Returns an array of the images for slider
       operationId: getAllSliderImages
       responses:
         "200":
@@ -615,66 +335,129 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_4'
-        "400":
-          description: It indicates that the server cannot or will not process the request due to an apparent client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/inline_response_400'
-        "404":
-          description: When an object is not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/inline_response_404'
-        "500":
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/inline_response_500'
+                type: object
+                properties:
+                  status: 
+                    type: integer
+                    example: 200
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Image"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalError" }
+    
     post:
       tags:
-      - slider
-      summary: Endpoint adds the image for slider
+        - slider
+      summary:  Endpoint adds the image for slider
       operationId: addSliderImage
       requestBody:
-        $ref: '#/components/requestBodies/SliderImage'
+       { $ref: "#/components/requestBodies/SliderImage"}
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "500": { $ref: "#/components/responses/InternalError" }
+      security:
+        - BearerAuth: []
+    
+    put: 
+      tags:
+        - slider
+      summary:  Endpoint for the slider image changing
+      operationId: editeSliderImage
+      requestBody:
+       { $ref: "#/components/requestBodies/SliderImage"}
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "500": { $ref: "#/components/responses/InternalError" }
+      security:
+        - BearerAuth: []
+
+  /partners:
+    get:
+      tags:
+        - "partners"
+      summary: Returns an array of the partners logos 
+      operationId: getAllPartnersLogos
       responses:
         "200":
           description: A successful response.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_1'
-        "401":
-          description: It indicates that the client must authenticate itself to get the requested response.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/inline_response_401'
-        "409":
-          description: If the object is already in the database and cannot be added because of some unique restriction. Or the same situation with editing of the some object. One more case the code can be returned if call delete operetion but there are some dependencies which conflict with the deleting.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/inline_response_409'
-        "500":
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/inline_response_500'
+                type: object
+                properties:
+                  status: 
+                    type: integer
+                    example: 200
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Partner"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalError" }
+    post:
+      tags:
+        - partners
+      summary:  Endpoint adds the partner logo
+      operationId: addPartnerLogo
+      requestBody:
+        $ref: "#/components/requestBodies/Partner"
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "500": { $ref: "#/components/responses/InternalError" }
       security:
-      - BearerAuth: []
+        - BearerAuth: []
+    
+    put: 
+      tags:
+        - parner
+      summary:  Changes the parthers logo
+      operationId: editePartnerInfo
+      requestBody:
+        $ref: "#/components/requestBodies/Partner"
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "500": { $ref: "#/components/responses/InternalError" }
+      security:
+        - BearerAuth: []
+
 components:
   schemas:
-    Feedback:
-      required:
-      - emailAddress
-      - emailBody
+    Partner:
       type: object
+      description: Represent object of the partner with the partner logo
+      required:
+        - emailAddress
+        - emailBody
+      properties:
+        id:
+          type: string
+          format: uuid
+          uniqueItems: true
+        text:
+          type: string
+          description: The short partner description
+          format: text
+        logo:
+          $ref: "#/components/schemas/Image"
+
+    Feedback:
+      type: object
+      description: Represent feedback object
+      required:
+        - emailAddress
+        - emailBody
       properties:
         name:
           type: string
@@ -687,71 +470,74 @@ components:
           type: string
           description: The main inforamation about some problem
           format: text
-      description: Represent feedback object
+    
     Instruction:
-      required:
-      - text
       type: object
+      description: Minimal quantity of information =)
+      required:
+        - text
       properties:
         id:
-          uniqueItems: true
           type: string
           format: uuid
+          uniqueItems: true
         text:
           type: string
           description: The main inforamation about some problem
           format: text
-      description: Minimal quantity of information =)
+    
     Category:
-      required:
-      - icon
-      - title
       type: object
+      required:
+        - title
+        - icon
       properties:
         id:
-          uniqueItems: true
           type: string
           format: uuid
-        title:
           uniqueItems: true
+        title:
           type: string
           example: Personal data
+          uniqueItems: true
         icon:
           type: string
           example: /assets/service/image/png
+    
     User:
-      required:
-      - email
-      - firstName
-      - password
       type: object
+      required:
+        - email
+        - firstName
+        - password
       properties:
         id:
           type: string
           format: uuid
         email:
-          uniqueItems: true
           type: string
           format: email
-          example: JhonSnow@example.com
+          uniqueItems: true
+          example: "JhonSnow@example.com"
         firstName:
           type: string
-          example: Jhon
+          example: "Jhon"
         lastName:
           type: string
-          example: Snow
+          example: "Snow"
         password:
-          maxLength: 256
-          minLength: 8
           type: string
           format: password
-          example: 12345678AbcdE
+          minLength: 8
+          maxLength: 256
+          example: "12345678AbcdE"
+    
     Card:
-      required:
-      - instructions
-      - thumb
-      - title
       type: object
+      required:
+        - title
+        - thumb
+        - instructions
       properties:
         id:
           type: string
@@ -760,18 +546,19 @@ components:
           type: string
           example: I was hacked
         thumb:
-          $ref: '#/components/schemas/Image'
+          $ref: "#/components/schemas/Image"
         instructions:
           type: array
           items:
-            $ref: '#/components/schemas/Instruction'
+              $ref: "#/components/schemas/Instruction"
         isPublished:
           type: boolean
           default: false
+    
     Image:
-      required:
-      - path
       type: object
+      required:
+        - path
       properties:
         id:
           type: string
@@ -781,6 +568,7 @@ components:
           example: ./assets/cards/image1.png
         alt:
           type: string
+    
     TokenPair:
       type: object
       properties:
@@ -790,233 +578,197 @@ components:
         refresh-token:
           type: string
           format: uuid
-    inline_response_200:
-      type: object
-      properties:
-        status:
-          type: integer
-          example: 200
-        data:
-          type: array
-          items:
-            $ref: '#/components/schemas/Card'
-    inline_response_400:
-      required:
-      - message
-      - status
-      type: object
-      properties:
-        status:
-          type: integer
-          example: 400
-        message:
-          type: string
-          example: bad request error
-    inline_response_404:
-      required:
-      - message
-      - status
-      type: object
-      properties:
-        status:
-          type: integer
-          example: 404
-        message:
-          type: string
-          example: not found error
-    inline_response_500:
-      required:
-      - message
-      - status
-      type: object
-      properties:
-        status:
-          type: integer
-          example: 500
-        message:
-          type: string
-          example: some internal error
-    inline_response_200_1:
-      type: object
-      properties:
-        status:
-          type: integer
-          example: 200
-        message:
-          type: string
-          example: successfull
-    inline_response_401:
-      required:
-      - message
-      - status
-      type: object
-      properties:
-        status:
-          type: integer
-          example: 401
-        message:
-          type: string
-          example: you are not authorized
-    inline_response_409:
-      required:
-      - message
-      - status
-      type: object
-      properties:
-        status:
-          type: integer
-          example: 409
-        message:
-          type: string
-          example: there is some conflinct and the operation can't be executed
-    inline_response_200_2:
-      type: object
-      properties:
-        status:
-          type: integer
-          example: 200
-        data:
-          $ref: '#/components/schemas/TokenPair'
-    inline_response_200_3:
-      type: object
-      properties:
-        status:
-          type: integer
-          example: 200
-        data:
-          type: array
-          items:
-            $ref: '#/components/schemas/Category'
-    inline_response_200_4:
-      type: object
-      properties:
-        status:
-          type: integer
-          example: 200
-        data:
-          type: array
-          items:
-            $ref: '#/components/schemas/Image'
-  responses:
-    Success:
-      description: A successful response.
+  
+  requestBodies:
+    Partner:
+      required: true
+      content:
+        multipart/form-data:
+          schema:
+            $ref: "#/components/schemas/Partner"
+      description: Partner object that needs to be added to the server
+    
+    SliderImage:
+      required: true
+      content:
+        multipart/form-data:
+          schema:
+            $ref: "#/components/schemas/Image"
+      description: Slider image object that needs to be added to the server
+    
+    Feedback:
+      required: true
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/inline_response_200_1'
-    BadRequest:
-      description: It indicates that the server cannot or will not process the request due to an apparent client error
+            $ref: "#/components/schemas/Feedback"
+      description: Card object that needs to be added to the server
+    
+    Card:
+      required: true
+      content:
+        multipart/form-data:
+          schema:
+            $ref: "#/components/schemas/Card"
+      description: Card object that needs to be added to the server
+    
+    Category:
+      required: true
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/inline_response_400'
-    Unauthorized:
-      description: It indicates that the client must authenticate itself to get the requested response.
+            $ref: "#/components/schemas/Category"
+      description: Category object that needs to be added to the server
+    
+    UserArray:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/inline_response_401'
-    Forbiden:
-      description: "It indicates that the server understands the request, but refuses to authorize it."
-      content:
-        application/json:
-          schema:
-            required:
-            - message
-            - status
-            type: object
-            properties:
-              status:
-                type: integer
-                example: 403
-              message:
-                type: string
-                example: the request not forbiden
-    NotFound:
-      description: When an object is not found
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/inline_response_404'
-    NotAllowedMethot:
-      description: A 405 error status code means "Method Not Allowed"
-      content:
-        application/json:
-          schema:
-            required:
-            - message
-            - status
-            type: object
-            properties:
-              status:
-                type: integer
-                example: 405
-              message:
-                type: string
-                example: the method not allowed
-    Conflict:
-      description: If the object is already in the database and cannot be added because of some unique restriction. Or the same situation with editing of the some object. One more case the code can be returned if call delete operetion but there are some dependencies which conflict with the deleting.
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/inline_response_409'
-    InternalError:
-      description: Bad Request
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/inline_response_500'
+            type: array
+            items:
+              $ref: "#/components/schemas/User"
+      description: List of user object
+      required: true
+  
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  
   parameters:
     id:
       name: id
       in: path
       description: Unique identifier for the object
       required: true
-      style: simple
-      explode: false
       schema:
-        type: string
-        format: uuid
-  requestBodies:
-    SliderImage:
-      description: Slider image object that needs to be added to the server
-      content:
-        multipart/form-data:
-          schema:
-            $ref: '#/components/schemas/Image'
-      required: true
-    Feedback:
-      description: Card object that needs to be added to the server
+          type: string
+          format: uuid
+  
+  responses:
+    Success:
+      description: A successful response.
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Feedback'
-      required: true
-    Card:
-      description: Card object that needs to be added to the server
-      content:
-        multipart/form-data:
-          schema:
-            $ref: '#/components/schemas/Card'
-      required: true
-    Category:
-      description: Category object that needs to be added to the server
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Category'
-      required: true
-    UserArray:
-      description: List of user object
+            type: object
+            properties:
+              status: 
+                type: integer
+                example: 200
+              message:
+                type: string
+                example: successfull
+    BadRequest:
+      description: It indicates that the server cannot or will not process the request due to an apparent client error
       content:
         application/json:
           schema:
-            type: array
-            items:
-              $ref: '#/components/schemas/User'
-      required: true
-  securitySchemes:
-    BearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
+            type: object
+            required:
+              - status
+              - message
+            properties:
+              status:
+                type: integer
+                example: 400
+              message:
+                type: string
+                example: bad request error
+    Unauthorized:
+        description: It indicates that the client must authenticate itself to get the requested response. 
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+                - message
+              properties:
+                status:
+                  type: integer
+                  example: 401
+                message:
+                  type: string
+                  example: you are not authorized
+    Forbiden:
+        description: It indicates that the server understands the request, but refuses to authorize it. 
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+                - message
+              properties:
+                status:
+                  type: integer
+                  example: 403
+                message:
+                  type: string
+                  example: the request not forbiden
+    NotFound:
+        description: When an object is not found
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+                - message
+              properties:
+                status:
+                  type: integer
+                  example: 404
+                message:
+                  type: string
+                  example: not found error
+    NotAllowedMethot:
+        description: A 405 error status code means "Method Not Allowed"
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+                - message
+              properties:
+                status:
+                  type: integer
+                  example: 405
+                message:
+                  type: string
+                  example: the method not allowed
+    Conflict:
+        description: If the object is already in the database and cannot be added because of some unique restriction. Or the same situation with editing of the some object. One more case the code can be returned if call delete operetion but there are some dependencies which conflict with the deleting.
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+                - message
+              properties:
+                status:
+                  type: integer
+                  example: 409
+                message:
+                  type: string
+                  example: there is some conflinct and the operation can"t be executed
+    InternalError:
+        description: Bad Request
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+                - message
+              properties:
+                status:
+                  type: integer
+                  example: 500
+                message:
+                  type: string
+                  example: some internal error
