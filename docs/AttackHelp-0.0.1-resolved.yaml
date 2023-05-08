@@ -402,6 +402,7 @@ paths:
         "400": { $ref: "#/components/responses/BadRequest" }
         "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/InternalError" }
+    
     post:
       tags:
         - partners
@@ -419,7 +420,7 @@ paths:
     
     put: 
       tags:
-        - parner
+        - parners
       summary:  Changes the parthers logo
       operationId: editePartnerInfo
       requestBody:
@@ -428,6 +429,22 @@ paths:
         "200": { $ref: "#/components/responses/Success" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "409": { $ref: "#/components/responses/Conflict" }
+        "500": { $ref: "#/components/responses/InternalError" }
+      security:
+        - BearerAuth: []
+
+  /partners/{id}:
+    delete: 
+      tags:
+        - parners
+      summary:  Delete the parthers logo
+      operationId: deletePartner
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/InternalError" }
       security:
         - BearerAuth: []
