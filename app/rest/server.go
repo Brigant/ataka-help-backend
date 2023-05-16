@@ -27,7 +27,7 @@ func NewServer(cfg config.Config) *Server {
 	return server
 }
 
-// Compose and init all dependensies and start server
+// Compose and init all dependencies and start server.
 func SetupAndRun() error {
 	cfg, err := config.InitConfig()
 	if err != nil {
@@ -53,6 +53,9 @@ func SetupAndRun() error {
 
 	app := handler.InitRoutes(cfg)
 
-	app.Listen(cfg.Server.Port)
+	if err := app.Listen(cfg.Server.Port); err != nil {
+		return fmt.Errorf("error happens during listen: %w", err)
+	}
+
 	return nil
 }

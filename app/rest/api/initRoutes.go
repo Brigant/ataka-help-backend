@@ -21,8 +21,7 @@ func NewHandler(deps Deps) Handler {
 }
 
 func (h *Handler) InitRoutes(cfg config.Config) *fiber.App {
-	// todo: make fiber config
-
+	// TODO: make fiber config
 	app := fiber.New()
 
 	app.Get("/", h.Cards.getCards)

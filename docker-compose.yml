@@ -39,6 +39,26 @@ services:
           condition: service_healthy
       networks:
         - atackhelp-net
+    
+    migrate-up:
+      env_file:
+        - .env
+      image: migrate/migrate
+      depends_on:
+        db:
+          condition: service_healthy
+      volumes:
+        - ${MIGRATIONS_HOST_PATH:-./migrations}:/migrations
+      command:
+         [
+          "-path",
+          "/migrations",
+          "-database",
+          "postgres://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}?sslmode=disable",
+          "up"
+        ]
+      networks:
+        - atackhelp-net
 
 volumes:
   database:

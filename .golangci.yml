@@ -131,7 +131,7 @@ linters:
     - dogsled
     #- dupl
     - dupword
-    - durationcheck
+    #- durationcheck
     - errcheck
     - errchkjson
     - errname

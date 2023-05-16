@@ -1,6 +1,10 @@
 package api
 
-import "github.com/gofiber/fiber/v2"
+import (
+	"fmt"
+
+	"github.com/gofiber/fiber/v2"
+)
 
 type CardsHandler struct {
 	CardService CardService
@@ -12,11 +16,15 @@ func NewCardsHandler(service CardService) CardsHandler {
 	}
 }
 
-func (h CardsHandler) getCards(c *fiber.Ctx) error {
-	result, err := h.CardService.ReturnCards(c)
+func (h CardsHandler) getCards(ctx *fiber.Ctx) error {
+	result, err := h.CardService.ReturnCards(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("cannot ReturnCarsd: %w", err)
 	}
 
-	return c.SendString(result)
+	if err := ctx.SendString(result); err != nil {
+		return fmt.Errorf("some err: %w", err)
+	}
+
+	return nil
 }
