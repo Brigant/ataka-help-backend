@@ -4,6 +4,8 @@ go 1.20
 
 require (
 	github.com/gofiber/fiber/v2 v2.45.0
+	github.com/jmoiron/sqlx v1.3.5
+	github.com/lib/pq v1.10.9
 	github.com/spf13/viper v1.15.0
 )
 

@@ -10,7 +10,7 @@ import (
 )
 
 type Server struct {
-	AppAddress      string
+	Port            string
 	AppReadTimeout  time.Duration
 	AppWriteTimeout time.Duration
 	AppIdleTimeout  time.Duration
@@ -27,7 +27,7 @@ type Postgres struct {
 
 type Config struct {
 	Server          Server
-	Postgres        Postgres
+	DB              Postgres
 	LogLevel        string
 	Salt            string
 	SigningKey      string
@@ -66,13 +66,13 @@ func InitConfig() (Config, error) {
 
 	config := Config{
 		Server: Server{
-			AppAddress:      ":" + viper.GetString("APP_PORT"),
+			Port:            ":" + viper.GetString("APP_PORT"),
 			AppReadTimeout:  viper.GetDuration("APP_READ_TIMEOUT") * time.Second,
 			AppWriteTimeout: viper.GetDuration("APP_WRITE_TIMEOUT") * time.Second,
 			AppIdleTimeout:  viper.GetDuration("APP_IDLE_TIMEOUT") * time.Second,
 		},
 		LogLevel: logLevel,
-		Postgres: Postgres{
+		DB: Postgres{
 			Host:     viper.GetString("DB_HOST"),
 			Port:     viper.GetString("DB_PORT"),
 			Database: viper.GetString("DB_NAME"),

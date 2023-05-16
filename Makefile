@@ -2,10 +2,15 @@
 
 all: tests lintcheck build
 
-run:
-	docker-compose up -d
+dev-run: dbrun run
 
-rebuild:
+dbrun:
+	docker-compose up -d db
+
+run:
+	go run ./cmd/main.go
+
+build:
 	docker-compose up -d --build
 
 stop:
