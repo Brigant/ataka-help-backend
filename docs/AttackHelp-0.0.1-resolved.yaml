@@ -31,6 +31,8 @@ tags:
     description: This is the endpoint to get the images for the main page slider.
   - name: partners
     description: This is the endpoint through which you need to get partner logos to the main page. The administrator can also change them.
+  - name: reports
+    description: This is the endpoint through which the administrator should upload the document with the activity report. 
 paths:
   /cards:
     get:
@@ -227,11 +229,37 @@ paths:
         - BearerAuth: []
   
   /auth/change:
-    get:
+    post:
       tags:
         - users
-      summary:  Потрібно придумами яким чином змінювати пароль!!
+      summary:  Password changing for authorized users
       operationId: changePassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                currentPassword:
+                  type: string
+                  description: Current user password
+                newPassword:
+                  type: string
+                  description: New user password
+                  minLength: 8
+                  maxLength: 14
+                  pattern: "^[[:graph:]]{8,14}$"
+                newPasswordConfirmed:
+                  type: string
+                  description: New user password confirmation
+                  minLength: 8
+                  maxLength: 14
+                  pattern: "^[[:graph:]]{8,14}$"
+              required:
+                - currentPassword
+                - newPassword
+                - newPasswordConfirmed
       responses:
         "200": { $ref: "#/components/responses/Success" }
         "401": { $ref: "#/components/responses/Unauthorized" }
@@ -384,6 +412,9 @@ paths:
         - "partners"
       summary: Returns an array of the partners logos 
       operationId: getAllPartnersLogos
+      parameters:
+        - $ref: "#/components/parameters/offset"
+        - $ref: "#/components/parameters/limit"
       responses:
         "200":
           description: A successful response.
@@ -420,7 +451,7 @@ paths:
     
     put: 
       tags:
-        - parners
+        - partners
       summary:  Changes the parthers logo
       operationId: editePartnerInfo
       requestBody:
@@ -436,7 +467,7 @@ paths:
   /partners/{id}:
     delete: 
       tags:
-        - parners
+        - partners
       summary:  Delete the parthers logo
       operationId: deletePartner
       parameters:
@@ -448,9 +479,65 @@ paths:
         "500": { $ref: "#/components/responses/InternalError" }
       security:
         - BearerAuth: []
+  
+  /reports:
+    get: 
+      tags:
+        - reports
+      summary:  Return first last added report
+      operationId: getReports
+      responses:
+        "200":
+          description: A successful response with document inside.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: 
+                    type: integer
+                    example: 200
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Document"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+    put: 
+      tags:
+        - reports
+      summary:  It should recieve the report objects and changes the old one to the new one (replace with new) 
+      operationId: editeReports
+      requestBody:
+        $ref: "#/components/requestBodies/Report"
+
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "500": { $ref: "#/components/responses/InternalError" }
+      security:
+        - BearerAuth: []
 
 components:
   schemas:
+    Document:
+      type: object
+      description: Represnt an a simple pdf file
+      required:
+        - path
+      properties:
+        id:
+          type: string
+          format: uuid
+          uniqueItems: true
+        path:
+          type: string
+          description: Path to the file
+          format: path
+  
     Partner:
       type: object
       description: Represent object of the partner with the partner logo
@@ -597,6 +684,14 @@ components:
           format: uuid
   
   requestBodies:
+    Report:
+      required: true
+      content:
+        multipart/form-data:
+          schema:
+            $ref: "#/components/schemas/Document"
+      description: Partner object that needs to be added to the server
+      
     Partner:
       required: true
       content:
@@ -662,6 +757,28 @@ components:
       schema:
           type: string
           format: uuid
+          
+    offset:
+      name: offset
+      in: query
+      description:  Is a parameter used in pagination to specify the starting point from where the data should be fetched.
+      required: true
+      schema:
+        type: integer
+        minimum: 0
+        example: 0
+        
+    limit:
+      name: limit
+      in: query
+      description:  Specifies the number of the objects to be displayed
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 50
+        example: 5
+        
   
   responses:
     Success:
