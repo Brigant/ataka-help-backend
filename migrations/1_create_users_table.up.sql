@@ -7,8 +7,8 @@ CREATE TABLE "users" (
    "created" Timestamp With Time Zone NOT NULL DEFAULT NOW(),
    "modified" Timestamp With Time Zone NOT NULL DEFAULT NOW(),
    PRIMARY KEY ("id"),
-   CONSTRAINT "unique_account_id" UNIQUE("id"),
-   CONSTRAINT "unique_account_email" UNIQUE("email")
+   CONSTRAINT "unique_users_id" UNIQUE("id"),
+   CONSTRAINT "unique_users_email" UNIQUE("email")
 );
 
 CREATE FUNCTION update_modified_column()   
@@ -23,6 +23,6 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
-CREATE TRIGGER update_account_modtime 
-BEFORE UPDATE ON "account" 
+CREATE TRIGGER update_users_modtime 
+BEFORE UPDATE ON "users" 
 FOR EACH ROW EXECUTE PROCEDURE  update_modified_column();

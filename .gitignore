@@ -30,3 +30,6 @@ config.yaml
 
 # Coverage files
 coverage.*
+
+# Vendors
+vendor

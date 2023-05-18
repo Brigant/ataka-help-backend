@@ -7,14 +7,14 @@ Install docker-compose [docker-compose](https://pkg.go.dev/github.com/docker/com
 Make copy of `.env_example`  with name `.env`. Specify the need configuration values.
 
 ## For development
-For the development it is usefull make the application runs  without rebuiling of the application container. It just run only database container and runs localy the app code.
-For that purpose  the command exists:
+For the local development it is usefull make the application run without rebuiling of the application container. It just runs only database container and runs the app code localy.
+For that purpose the command exists:
 ```
-make dev-run 
+make run 
 ```
 For migration up: 
 ```
-make migration
+make migration-up
 ```
 !!! For downward migration in the file change the argument `"-all"` to the number of desired downward migrations, for example `"1"`. Use command:
 ```
@@ -28,13 +28,13 @@ Run command:
 make build
 ```
 ### Simple run
-It runs existed containers:
+It runs existed images:
 ```
-make run
+make up
 ```
 
 ### How to stop
 Run command:
 ```
-make stop
+make down
 ```

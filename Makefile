@@ -2,24 +2,27 @@
 
 all: tests lintcheck build
 
-dev-run: dbrun run
+run: dbrun devrun
+
+devrun:
+	DB_HOST=localhost go run ./cmd/main.go
 
 dbrun:
 	docker-compose up -d db
 
-migration:
+migration-up:
 	docker-compose up -d db migrate-up
 
 migration-down:
 	docker-compose -f migrate-down.yml up -d
 
-run:
-	go run ./cmd/main.go
-
 build:
 	docker-compose up -d --build
 
-stop:
+up:
+	docker-compose up -d
+
+down:
 	docker-compose down
 
 lintcheck:
