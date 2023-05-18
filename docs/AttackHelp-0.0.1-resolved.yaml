@@ -244,20 +244,18 @@ paths:
                 currentPassword:
                   type: string
                   description: Current user password
-                  minLength: 8
-                  maxLength: 14
                 newPassword:
                   type: string
                   description: New user password
                   minLength: 8
                   maxLength: 14
-                  pattern: "^[\\x20-\\x7E]+$"
+                  pattern: "^[[:graph:]]{8,14}$"
                 newPasswordConfirmed:
                   type: string
                   description: New user password confirmation
                   minLength: 8
                   maxLength: 14
-                  pattern: "^[\\x20-\\x7E]+$"
+                  pattern: "^[[:graph:]]{8,14}$"
               required:
                 - currentPassword
                 - newPassword
