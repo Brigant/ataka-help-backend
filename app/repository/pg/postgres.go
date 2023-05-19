@@ -3,13 +3,14 @@ package pg
 import (
 	"fmt"
 
-	"github.com/baza-trainee/ataka-help-backend/config"
+	"github.com/baza-trainee/ataka-help-backend/app/config"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq" // nececarry blank import
 )
 
 type Repository struct {
-	CardsDB CardsDB
+	CardsRepo
+	PartnersRepo
 }
 
 // NewPostgresDB function returns object of datatabase.
@@ -26,6 +27,7 @@ func NewPostgresDB(cfg config.Config) (*sqlx.DB, error) {
 // Returns an object of the Ropository.
 func NewRepository(db *sqlx.DB) Repository {
 	return Repository{
-		CardsDB: NewAccountDB(db),
+		CardsRepo:    CardsRepo{db: db},
+		PartnersRepo: PartnersRepo{db: db},
 	}
 }

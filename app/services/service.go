@@ -1,15 +1,15 @@
 package services
 
-type Deps struct {
-	CardsStorage CardsStorage
-}
+import "github.com/baza-trainee/ataka-help-backend/app/repository/pg"
 
 type Services struct {
-	CardsService CardsService
+	CardsService
+	PartnersService
 }
 
-func New(deps Deps) Services {
+func NewService(repo pg.Repository) Services {
 	return Services{
-		CardsService: NewCardsService(deps.CardsStorage),
+		CardsService{Repo: repo.CardsRepo},
+		PartnersService{Repo: repo.PartnersRepo},
 	}
 }

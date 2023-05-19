@@ -1,11 +1,10 @@
-# Define targets
-
+.PHONY: all run
 all: tests lintcheck build
 
 run: dbrun devrun
 
 devrun:
-	DB_HOST=localhost go run ./cmd/main.go
+	export `grep -v '#' .env | xargs` && DB_HOST=localhost && go run cmd/main.go
 
 dbrun:
 	docker-compose up -d db

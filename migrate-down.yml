@@ -2,6 +2,8 @@ version: '3.9'
 
 services:
   migrate-down:
+      env_file:
+        - .env
       image: migrate/migrate
       container_name: migrate-down
       volumes:
