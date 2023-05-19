@@ -34,9 +34,9 @@ func main() {
 
 	server := api.NewServer(cfg)
 
-	handler.InitRoutes(server.HttpServer)
+	handler.InitRoutes(server.HTTPServer)
 
-	if err := server.HttpServer.Listen(cfg.Server.AppAddress); err != nil {
+	if err := server.HTTPServer.Listen(cfg.Server.AppAddress); err != nil {
 		log.Println(err.Error())
 	}
 }

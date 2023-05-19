@@ -1,5 +1,7 @@
 package services
 
+import "fmt"
+
 type PartnersService struct {
 	Repo PartnersRepository
 }
@@ -7,7 +9,8 @@ type PartnersService struct {
 func (s PartnersService) GetAll() (string, error) {
 	str, err := s.Repo.SelectAllPartners()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("error in PartnerService GetAll: %w", err)
 	}
-	return str, err
+
+	return str, nil
 }

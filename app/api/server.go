@@ -6,7 +6,7 @@ import (
 )
 
 type Server struct {
-	HttpServer *fiber.App
+	HTTPServer *fiber.App
 }
 
 func NewServer(cfg config.Config) *Server {
@@ -17,7 +17,7 @@ func NewServer(cfg config.Config) *Server {
 		IdleTimeout:  cfg.Server.AppIdleTimeout,
 	}
 
-	server.HttpServer = fiber.New(fconfig)
+	server.HTTPServer = fiber.New(fconfig)
 
 	return server
 }
