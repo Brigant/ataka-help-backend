@@ -17,7 +17,6 @@ func main() {
 	}
 
 	logger, err := logger.New(cfg.LogLevel)
-	
 	if err != nil {
 		log.Print(err.Error())
 	}
@@ -31,10 +30,7 @@ func main() {
 
 	service := services.NewService(repo)
 
-	handler := api.NewHandler(api.ServiceInterfaces{
-		CardService:    service,
-		PartnerService: service,
-	}, *logger)
+	handler := api.NewHandler(service, logger)
 
 	server := api.NewServer(cfg)
 

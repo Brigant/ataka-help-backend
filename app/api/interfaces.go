@@ -1,6 +1,6 @@
 package api
 
-type ServiceInterfaces struct {
+type ServiceInterfaces interface {
 	CardService
 	PartnerService
 }

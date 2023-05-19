@@ -6,16 +6,14 @@ import (
 )
 
 type Handler struct {
-	Card
-	Partner
-	logger.Logger
+	Card    Card
+	Partner Partner
 }
 
-func NewHandler(services ServiceInterfaces, log logger.Logger) Handler {
+func NewHandler(services ServiceInterfaces, log *logger.Logger) Handler {
 	return Handler{
-		Card{Service: services},
-		Partner{Service: services},
-		log,
+		Card:    NewCardsHandler(services, log),
+		Partner: NewParnerHandler(services, log),
 	}
 }
 
