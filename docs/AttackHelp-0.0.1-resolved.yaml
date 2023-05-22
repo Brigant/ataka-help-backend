@@ -192,24 +192,21 @@ paths:
             schema:
               type: object
               required:
-                - login
+                - email
                 - password
-                - data
               properties:
-                login:
+                email:
                   type: string
-                  example: myLogin
+                  format: email
+                  example: DaenerysTargaryen@gmail.com
                 password:
                   type: string
                   format: password
-                  minLength: 8
-                  maxLength: 14
-                  pattern: "^[[:graph:]]{8,14}$"
-                data:
-                  $ref: "#/components/schemas/TokenPair"
+                  example: password1234
       responses:
-        "200": { $ref: "#/components/responses/Success" }
+        "200": { $ref: "#/components/schemas/TokenPair" }
         "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
         "500": { $ref: "#/components/responses/InternalError" }
   
   /auth/logout:
@@ -565,7 +562,7 @@ paths:
       requestBody:
         $ref: "#/components/requestBodies/Contact"
       responses:
-        "200": {$ref: "#/components/responses/Success"}
+        "201": {$ref: "#/components/responses/Created"}
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "404": { $ref: "#/components/responses/NotFound" }
@@ -700,7 +697,8 @@ components:
           type: string
           format: password
           minLength: 8
-          maxLength: 256
+          maxLength: 14
+          pattern: "^[[:graph:]]{8,14}$"
           example: "12345678AbcdE"
     
     Card:
@@ -889,11 +887,14 @@ components:
   
   responses:
     Success:
-      description: A successful response.
+      description: A successful response
       content:
         application/json:
           schema:
             type: object
+            required:
+              - status
+              - message
             properties:
               status: 
                 type: integer
@@ -901,8 +902,24 @@ components:
               message:
                 type: string
                 example: successfull
+    Created:
+      description: Resource was created
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - status
+              - message
+            properties:
+              status: 
+                type: integer
+                example: 201
+              message:
+                type: string
+                example: created
     BadRequest:
-      description: It indicates that the server cannot or will not process the request due to an apparent client error
+      description: It indicates that the server can not or will not process the request due to an apparent client error
       content:
         application/json:
           schema:
