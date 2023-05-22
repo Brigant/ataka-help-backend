@@ -108,7 +108,6 @@ paths:
       tags:
         - cards
       summary: Find card by ID
-      description: Returns a single card
       operationId: getCardById
       parameters:
         - $ref: "#/components/parameters/id"
@@ -122,6 +121,7 @@ paths:
         "400": { $ref: "#/components/responses/BadRequest" }
         "404": { $ref: "#/components/responses/NotFound"}
         "500": { $ref: "#/components/responses/InternalError" }
+
     put:
       tags:
         - cards
@@ -139,6 +139,7 @@ paths:
         "500": { $ref: "#/components/responses/InternalError" }
       security:
         - BearerAuth: []
+
     delete:
       tags:
         - cards
@@ -163,12 +164,12 @@ paths:
       description: This can only be done by the logged in user.
       operationId: createUser
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               $ref: "#/components/schemas/User"
         description: Created user object
-        required: true
       responses:
         "200": { $ref: "#/components/responses/Success" }
         "400": { $ref: "#/components/responses/BadRequest" }
@@ -179,40 +180,33 @@ paths:
         - BearerAuth: []
   
   /auth/login:
-    get:
+    post:
       tags:
         - users
       summary: Logs user into the system
       operationId: loginUser
-      parameters:
-        - name: login
-          in: query
-          description: The users email for login
-          required: true
-          schema:
-            type: string
-            format: email
-        - name: password
-          in: query
-          description: The password for login in clear text
-          required: true
-          schema:
-            type: string
-            format: password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: DaenerysTargaryen@gmail.com
+                password:
+                  type: string
+                  format: password
+                  example: password1234
       responses:
-        "200": 
-          description: A successful response.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status: 
-                    type: integer
-                    example: 200
-                  data:
-                    $ref: "#/components/schemas/TokenPair"
+        "200": { $ref: "#/components/schemas/TokenPair" }
         "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
         "500": { $ref: "#/components/responses/InternalError" }
   
   /auth/logout:
@@ -229,11 +223,37 @@ paths:
         - BearerAuth: []
   
   /auth/change:
-    get:
+    post:
       tags:
         - users
-      summary:  Потрібно придумами яким чином змінювати пароль!!
+      summary:  Password changing for authorized users
       operationId: changePassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - currentPassword
+                - newPassword
+                - newPasswordConfirmed
+              properties:
+                currentPassword:
+                  type: string
+                  description: Current user password
+                newPassword:
+                  type: string
+                  description: New user password
+                  minLength: 8
+                  maxLength: 14
+                  pattern: "^[[:graph:]]{8,14}$"
+                newPasswordConfirmed:
+                  type: string
+                  description: New user password confirmation
+                  minLength: 8
+                  maxLength: 14
+                  pattern: "^[[:graph:]]{8,14}$"
       responses:
         "200": { $ref: "#/components/responses/Success" }
         "401": { $ref: "#/components/responses/Unauthorized" }
@@ -265,6 +285,7 @@ paths:
         "500": { $ref: "#/components/responses/InternalError" }
       security:
         - BearerAuth: []
+
     post:
       tags:
         - categories
@@ -316,7 +337,7 @@ paths:
     post:
       tags:
         - feedback
-      summary:  Endpoint adds the category
+      summary: To get feedback from users
       operationId: addFeedback
       requestBody:
        { $ref: "#/components/requestBodies/Feedback"}
@@ -495,22 +516,84 @@ paths:
       security:
         - BearerAuth: []
 
+  /contact/{id}:
+    get:
+      tags:
+        - contact
+      summary: Get contact by ID
+      operationId: getContactById
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Contact"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound"}
+        "500": { $ref: "#/components/responses/InternalError" }
+    
+    put:
+      tags:
+        - contact
+      summary: Update contact by ID
+      operationId: updateContactById
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        $ref: "#/components/requestBodies/Contact"
+      responses:
+        "200": {$ref: "#/components/responses/Success"}
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalError" }
+      security:
+        - BearerAuth: []
+
+  /contact:
+    post:
+      tags:
+        - contact
+      summary: Create contact by ID
+      operationId: createContactById
+      requestBody:
+        $ref: "#/components/requestBodies/Contact"
+      responses:
+        "201": {$ref: "#/components/responses/Created"}
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalError" }
+      security:
+        - BearerAuth: []
+
+
 components:
   schemas:
     Document:
       type: object
-      description: Represnt an a simple pdf file
+      description: Represents a simple pdf file
       required:
+        - file
         - path
       properties:
+        file:
+          type: string
+          format: binary
+          pattern: "^.*\\.pdf$"
+          description: Maximum file size must not exceed 5MB
         id:
           type: string
           format: uuid
           uniqueItems: true
         path:
           type: string
-          description: Path to the file
           format: path
+          description: Path to the file
+          uniqueItems: true
   
     Partner:
       type: object
@@ -532,26 +615,33 @@ components:
 
     Feedback:
       type: object
-      description: Represent feedback object
+      description: Represents feedback object
       required:
+        - name
         - emailAddress
-        - emailBody
+        - comment
       properties:
         name:
           type: string
           example: Vasyl Petrenko
+          minLength: 2
+          maxLength: 50
         emailAddress:
           type: string
+          description: Email must contain the symbol @ and must not contain ru-domains such as mail.ru, yandex.ru, list.ru
           format: email
+          pattern: "^(?!.*\\.ru$)"
           example: vasya@example.com
-        emailBody:
+        comment:
           type: string
-          description: The main inforamation about some problem
+          description: The main information about some problem
           format: text
+          minLength: 1
+          maxLength: 300
     
     Instruction:
       type: object
-      description: Minimal quantity of information =)
+      description: Minimal quantity of information
       required:
         - text
       properties:
@@ -561,7 +651,7 @@ components:
           uniqueItems: true
         text:
           type: string
-          description: The main inforamation about some problem
+          description: The main information about some problem
           format: text
     
     Category:
@@ -607,7 +697,8 @@ components:
           type: string
           format: password
           minLength: 8
-          maxLength: 256
+          maxLength: 14
+          pattern: "^[[:graph:]]{8,14}$"
           example: "12345678AbcdE"
     
     Card:
@@ -622,13 +713,15 @@ components:
           format: uuid
         title:
           type: string
+          minLength: 3
+          maxLength: 300
           example: I was hacked
         thumb:
           $ref: "#/components/schemas/Image"
         instructions:
           type: array
           items:
-              $ref: "#/components/schemas/Instruction"
+            $ref: "#/components/schemas/Instruction"
         isPublished:
           type: boolean
           default: false
@@ -636,16 +729,24 @@ components:
     Image:
       type: object
       required:
+        - file
         - path
       properties:
+        file:
+          type: string
+          format: binary
+          pattern: "^.*\\.(jpg|webP|png)$"
+          description: Maximum file size must not exceed 5MB
         id:
           type: string
           format: uuid
+          uniqueItems: true
         path:
           type: string
+          format: path
           example: ./assets/cards/image1.png
-        alt:
-          type: string
+          # To avoid the identical file titles
+          uniqueItems: true
     
     TokenPair:
       type: object
@@ -656,7 +757,21 @@ components:
         refresh-token:
           type: string
           format: uuid
-  
+    
+    Contact:
+      type: object
+      required:
+        - phoneNumber
+      properties:
+        id:
+          type: string
+          format: uuid
+          uniqueItems: true
+        phoneNumber:
+          type: string
+          pattern: "^\\+380\\d{9}$"
+          uniqueItems: true
+          
   requestBodies:
     Report:
       required: true
@@ -679,7 +794,15 @@ components:
       content:
         multipart/form-data:
           schema:
-            $ref: "#/components/schemas/Image"
+            type: object
+            properties:
+              title:
+                type: string
+                minLength: 10
+                maxLength: 30
+                example: Slider title
+              thumb:
+                $ref: "#/components/schemas/Image"
       description: Slider image object that needs to be added to the server
     
     Feedback:
@@ -688,7 +811,7 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/Feedback"
-      description: Card object that needs to be added to the server
+      description: Feedback object that needs to be added to the server
     
     Card:
       required: true
@@ -713,8 +836,16 @@ components:
             type: array
             items:
               $ref: "#/components/schemas/User"
-      description: List of user object
+      description: List of user objects
       required: true
+    
+    Contact:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Contact"
+      description: Contact object that needs to be added to the server
   
   securitySchemes:
     BearerAuth:
@@ -756,11 +887,14 @@ components:
   
   responses:
     Success:
-      description: A successful response.
+      description: A successful response
       content:
         application/json:
           schema:
             type: object
+            required:
+              - status
+              - message
             properties:
               status: 
                 type: integer
@@ -768,8 +902,24 @@ components:
               message:
                 type: string
                 example: successfull
+    Created:
+      description: Resource was created
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - status
+              - message
+            properties:
+              status: 
+                type: integer
+                example: 201
+              message:
+                type: string
+                example: created
     BadRequest:
-      description: It indicates that the server cannot or will not process the request due to an apparent client error
+      description: It indicates that the server can not or will not process the request due to an apparent client error
       content:
         application/json:
           schema:
