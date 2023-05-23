@@ -7,6 +7,10 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+type PartnerService interface {
+	ReturnPartners() (string, error)
+}
+
 type Partner struct {
 	Service PartnerService
 	log     *logger.Logger
@@ -20,7 +24,7 @@ func NewParnerHandler(service PartnerService, log *logger.Logger) Partner {
 }
 
 func (h Partner) Get(ctx *fiber.Ctx) error {
-	str, err := h.Service.GetAll()
+	str, err := h.Service.ReturnPartners()
 	if err != nil {
 		return fmt.Errorf("some err: %w", err)
 	}

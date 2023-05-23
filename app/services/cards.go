@@ -4,8 +4,12 @@ import (
 	"fmt"
 )
 
+type CardsRepo interface {
+	SelectAllCards() (string, error)
+}
+
 type CardsService struct {
-	Repo CardsRepository
+	Repo CardsRepo
 }
 
 func (s CardsService) ReturnCards() (string, error) {
