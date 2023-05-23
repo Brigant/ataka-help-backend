@@ -1,0 +1,70 @@
+# docker-compose.yml 
+version: '3.9'
+
+services:
+    db:
+      env_file:
+        - .env
+      image: postgres:15.3-alpine3.18
+      container_name: db
+      environment:
+        POSTGRES_USER: ${DB_USER}
+        POSTGRES_PASSWORD: ${DB_PASSWORD}
+        POSTGRES_DB: ${DB_NAME}
+        PGDATA: /data/postgres
+        TZ: "Europe/Kiev"
+        PGTZ: "Europe/Kiev"
+      volumes:
+        - database:/data/postgres
+      ports:
+        - ${DB_PORT}:${DB_PORT}
+      networks:
+        - atackhelp-net
+      restart: unless-stopped
+      healthcheck:
+        test: pg_isready -U ${DB_USER} -d ${DB_NAME}
+        interval: 2s
+        timeout: 2s
+        retries: 5
+
+    app:
+      env_file:
+        - .env
+      build: .
+      container_name: app
+      restart: unless-stopped
+      ports:
+        - ${APP_PORT}:${APP_PORT}
+      depends_on:
+        db:
+          condition: service_healthy
+      networks:
+        - atackhelp-net
+    
+    migrate-up:
+      env_file:
+        - .env
+      image: migrate/migrate
+      container_name: migrate-up
+      depends_on:
+        db:
+          condition: service_healthy
+      volumes:
+        - ${MIGRATIONS_HOST_PATH:-./migrations}:/migrations
+      command:
+         [
+          "-path",
+          "/migrations",
+          "-database",
+          "postgres://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}?sslmode=disable",
+          "up"
+        ]
+      networks:
+        - atackhelp-net
+
+volumes:
+  database:
+
+networks:
+  atackhelp-net:
+

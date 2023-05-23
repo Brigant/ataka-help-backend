@@ -1,0 +1,23 @@
+version: '3.9'
+
+services:
+  migrate-down:
+      env_file:
+        - .env
+      image: migrate/migrate
+      container_name: migrate-down
+      volumes:
+        - ${MIGRATIONS_HOST_PATH:-./migrations}:/migrations
+      command:
+         [
+          "-path",
+          "/migrations",
+          "-database",
+          "postgres://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}?sslmode=disable",
+          "down", "-all"
+        ]
+      networks:
+        - atackhelp-net
+
+networks:
+  atackhelp-net:

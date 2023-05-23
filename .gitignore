@@ -19,3 +19,17 @@
 
 # Go workspace file
 go.work
+
+# Seccure files
+.env
+config.yml
+config.yaml
+
+# IDE files
+.vsconfig
+
+# Coverage files
+coverage.*
+
+# Vendors
+vendor
