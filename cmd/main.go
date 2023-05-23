@@ -16,6 +16,8 @@ import (
 )
 
 func main() {
+	const timoutLimit = 5
+
 	cfg, err := config.InitConfig()
 	if err != nil {
 		log.Print(err.Error())
@@ -26,6 +28,8 @@ func main() {
 		log.Print(err.Error())
 	}
 
+	defer logger.Flush()
+
 	repo, err := pg.NewRepository(cfg)
 	if err != nil {
 		logger.Errorw("New Repository", "error", err.Error())
@@ -35,30 +39,28 @@ func main() {
 
 	handler := api.NewHandler(service, logger)
 
-	server := api.NewServer(cfg)
-
-	handler.InitRoutes(server.HTTPServer)
+	server := api.NewServer(cfg, handler)
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
 
 	go func() {
 		if err := server.HTTPServer.Listen(cfg.Server.AppAddress); err != nil {
-			log.Println(err.Error())
+			logger.Errorw("Start and Listen", "error", err.Error())
 		}
 	}()
 
 	<-quit
 
-	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), timoutLimit*time.Second)
 	defer shutdownCancel()
 
 	if err := server.Shutdown(shutdownCtx); err != nil {
-		log.Fatalf("error closing server: %v", err)
+		logger.Errorw("Shutdown server", "error", err.Error())
 	}
 
 	if err := repo.Close(); err != nil {
-		logger.Errorf("error occured on db connection close: %s", err.Error())
+		logger.Errorw("Close repository", "error", err.Error())
 	}
 
 	log.Println("server stopped")

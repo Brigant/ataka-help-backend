@@ -11,7 +11,7 @@ type Server struct {
 	HTTPServer *fiber.App
 }
 
-func NewServer(cfg config.Config) *Server {
+func NewServer(cfg config.Config, handler Handler) *Server {
 	server := new(Server)
 	fconfig := fiber.Config{
 		ReadTimeout:  cfg.Server.AppReadTimeout,
@@ -21,29 +21,16 @@ func NewServer(cfg config.Config) *Server {
 
 	server.HTTPServer = fiber.New(fconfig)
 
-	return server
-}
-
-type Serv struct {
-	HTTPServer *fiber.App
-	serices    ServiceInterfaces
-}
-
-func NewServ(cfg config.Config, services ServiceInterfaces) *Serv {
-	fconfig := fiber.Config{
-		ReadTimeout:  cfg.Server.AppReadTimeout,
-		WriteTimeout: cfg.Server.AppWriteTimeout,
-		IdleTimeout:  cfg.Server.AppIdleTimeout,
-	}
-
-	server := &Serv{
-		HTTPServer: fiber.New(fconfig),
-		serices:    services,
-	}
+	server.initRoutes(server.HTTPServer, handler)
 
 	return server
 }
 
 func (s *Server) Shutdown(ctx context.Context) error {
 	return s.HTTPServer.ShutdownWithContext(ctx)
+}
+
+func (s Server) initRoutes(app *fiber.App, handler Handler) {
+	app.Get("/", handler.Card.getCards)
+	app.Get("/partners", handler.Partner.Get)
 }

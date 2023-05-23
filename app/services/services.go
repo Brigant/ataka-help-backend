@@ -1,5 +1,10 @@
 package services
 
+type RepoInterface interface {
+	CardsRepo
+	PartnersRepo
+}
+
 type Services struct {
 	CardsService
 	PartnersService
