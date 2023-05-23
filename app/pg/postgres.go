@@ -23,14 +23,14 @@ func NewRepository(cfg config.Config) (Repo, error) {
 	return Repo{db: *database}, nil
 }
 
+func (r Repo) Close() error {
+	return r.db.Close()
+}
+
 func (r Repo) SelectAllCards() (string, error) {
 	return "some string from DB", nil
 }
 
 func (r Repo) SelectAllPartners() (string, error) {
 	return "some partners from db", nil
-}
-
-func (r Repo) Close() error {
-	return r.db.Close()
 }
