@@ -2,11 +2,15 @@ package services
 
 import "fmt"
 
-type PartnersService struct {
-	Repo PartnersRepository
+type PartnersRepo interface {
+	SelectAllPartners() (string, error)
 }
 
-func (s PartnersService) GetAll() (string, error) {
+type PartnersService struct {
+	Repo PartnersRepo
+}
+
+func (s PartnersService) ReturnPartners() (string, error) {
 	str, err := s.Repo.SelectAllPartners()
 	if err != nil {
 		return "", fmt.Errorf("error in PartnerService GetAll: %w", err)

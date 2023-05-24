@@ -7,6 +7,10 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+type CardService interface {
+	ReturnCards() (string, error)
+}
+
 type Card struct {
 	Service CardService
 	log     *logger.Logger

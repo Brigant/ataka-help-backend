@@ -1,16 +1,23 @@
 package main
 
 import (
+	"context"
 	"log"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/baza-trainee/ataka-help-backend/app/api"
 	"github.com/baza-trainee/ataka-help-backend/app/config"
 	"github.com/baza-trainee/ataka-help-backend/app/logger"
-	"github.com/baza-trainee/ataka-help-backend/app/repository/pg"
+	"github.com/baza-trainee/ataka-help-backend/app/pg"
 	"github.com/baza-trainee/ataka-help-backend/app/services"
 )
 
 func main() {
+	const timoutLimit = 5
+
 	cfg, err := config.InitConfig()
 	if err != nil {
 		log.Print(err.Error())
@@ -21,22 +28,40 @@ func main() {
 		log.Print(err.Error())
 	}
 
-	db, err := pg.NewPostgresDB(cfg)
-	if err != nil {
-		log.Print(err.Error())
-	}
+	defer logger.Flush()
 
-	repo := pg.NewRepository(db)
+	repo, err := pg.NewRepository(cfg)
+	if err != nil {
+		logger.Errorw("New Repository", "error", err.Error())
+	}
 
 	service := services.NewService(repo)
 
 	handler := api.NewHandler(service, logger)
 
-	server := api.NewServer(cfg)
+	server := api.NewServer(cfg, handler)
 
-	handler.InitRoutes(server.HTTPServer)
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
 
-	if err := server.HTTPServer.Listen(cfg.Server.AppAddress); err != nil {
-		log.Println(err.Error())
+	go func() {
+		if err := server.HTTPServer.Listen(cfg.Server.AppAddress); err != nil {
+			logger.Errorw("Start and Listen", "error", err.Error())
+		}
+	}()
+
+	<-quit
+
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), timoutLimit*time.Second)
+	defer shutdownCancel()
+
+	if err := server.Shutdown(shutdownCtx); err != nil {
+		logger.Errorw("Shutdown server", "error", err.Error())
 	}
+
+	if err := repo.Close(); err != nil {
+		logger.Errorw("Close repository", "error", err.Error())
+	}
+
+	log.Println("server stopped")
 }

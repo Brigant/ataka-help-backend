@@ -15,7 +15,7 @@ servers:
   # Added by API Auto Mocking Plugin
   # Added by API Auto Mocking Plugin
   - description: SwaggerHub API Auto Mocking
-    url: https://virtserver.swaggerhub.com/SERGEYJULY/AttackHelp/0.0.1
+    url: https://virtserver.swaggerhub.com/SERGEYJULY/AttackHelp/0.1.0
   - description: For now only local server is possible
     url: "http://localhost:7000"
 tags:
