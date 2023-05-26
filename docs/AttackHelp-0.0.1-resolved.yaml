@@ -4,7 +4,7 @@ info:
     This is a sample Attacka Help server.  You can find
     out more about protject at the our
     [discord](https://discord.gg/GXSGbyQ3) server
-  version: "0.0.1"
+  version: "0.1.1"
   title: Swagger Attacka Help
   contact:
     email: sergeyjuly@gmail.com
@@ -23,8 +23,6 @@ tags:
     description: Card is the main entity of the information carier.
   - name: users
     description: Operations about user authorization.
-  - name: categories
-    description: It describes the operations which are possible to execute over the category entity.
   - name: feedback
     description: This is the endpoint through which the user can fill out the form and send feedback.
   - name: slider
@@ -40,6 +38,9 @@ paths:
         - cards
       summary: Returns the cards array
       operationId: getAllCards
+      parameters:
+        - $ref: "#/components/parameters/offset"
+        - $ref: "#/components/parameters/limit"
       responses:
         "200":
           description: A successful response.
@@ -72,37 +73,7 @@ paths:
         "500": { $ref: "#/components/responses/InternalError" }
       security:
         - BearerAuth: []
-  
-  /cards/findByCategory:
-    get:
-      tags:
-        - cards
-      summary: Finds by category
-      description: Multiple status values can be provided with comma separated strings
-      operationId: findByCategory
-      parameters:
-        - name: categories
-          in: query
-          description: Status values that need to be considered for filter
-          required: true
-          explode: true
-          schema:
-            type: array
-            items:
-              type: string
-      responses:
-        "200":
-          description: successful operation
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Card"
-        "400": { $ref: "#/components/responses/BadRequest" }
-        "404": { $ref: "#/components/responses/NotFound" }
-        "500": { $ref: "#/components/responses/InternalError" }
-  
+
   /cards/{id}:
     get:
       tags:
@@ -259,49 +230,7 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "500": { $ref: "#/components/responses/InternalError" }
   
-  /categories:
-    get:
-      tags:
-        - categories
-      summary:  Returns an array of the categories
-      operationId: getAllCategories
-      responses:
-        "200":
-          description: A successful response.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status: 
-                    type: integer
-                    example: 200
-                  data:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/Category"
-        "400": { $ref: "#/components/responses/BadRequest" }
-        "404": { $ref: "#/components/responses/NotFound" }
-        "500": { $ref: "#/components/responses/InternalError" }
-      security:
-        - BearerAuth: []
-
-    post:
-      tags:
-        - categories
-      summary:  Endpoint adds the category
-      operationId: addCategory
-      requestBody:
-       { $ref: "#/components/requestBodies/Category"}
-      responses:
-        "200": { $ref: "#/components/responses/Success" }
-        "401": { $ref: "#/components/responses/Unauthorized" }
-        "409": { $ref: "#/components/responses/Conflict" }
-        "500": { $ref: "#/components/responses/InternalError" }
-      security:
-        - BearerAuth: []
   
-  /categories/{id}:
     put:
       tags:
         - categories
@@ -569,7 +498,6 @@ paths:
         "500": { $ref: "#/components/responses/InternalError" }
       security:
         - BearerAuth: []
-
 
 components:
   schemas:

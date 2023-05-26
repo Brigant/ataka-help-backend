@@ -10,7 +10,7 @@ type ServiceInterfaces interface {
 }
 
 type Handler struct {
-	Card    Card
+	Card    CardHandler
 	Partner Partner
 }
 

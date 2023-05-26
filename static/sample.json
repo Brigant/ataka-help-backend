@@ -1,0 +1,11 @@
+{  
+    "thumb":"path",
+    "alt":"Description",
+    "title":"Title",
+    "description":[
+        {"item":"First item"},
+        {"item":"Second item"},
+        {"item":"Third item"},
+        {"item":"Next field"}
+    ]
+}
