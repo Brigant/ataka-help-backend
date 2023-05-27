@@ -4,13 +4,16 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/baza-trainee/ataka-help-backend/app/core"
 	"github.com/baza-trainee/ataka-help-backend/app/logger"
+	"github.com/baza-trainee/ataka-help-backend/app/structs"
 	"github.com/gofiber/fiber/v2"
 )
 
+const uploadDirectory = "static/uploads/"
+
 type CardService interface {
 	ReturnCards() (string, error)
+	SaveCard(structs.Card) error
 }
 
 type CardHandler struct {
@@ -43,38 +46,64 @@ func (h CardHandler) getCards(ctx *fiber.Ctx) error {
 func (h CardHandler) createCard(ctx *fiber.Ctx) error {
 	ctx.Accepts("image/png/webp")
 
-	if form, err := ctx.MultipartForm(); err == nil {
-		// => *multipart.Form
+	title := ctx.FormValue("title")
 
-		if description := form.Value["description"]; len(description) > 0 {
-			// Get key value:
-			fmt.Println(description)
-		}
+	if len(title) < 4 || len(title) > 300 {
+		h.log.Debugw("createCard", "form.Value title", "bad title")
+		ctx.JSON(structs.SetResponse(http.StatusBadRequest, "bad title"))
 
-		// Get all files from "documents" key:
-		f := form.File["image"]
-		// => []*multipart.FileHeader
-		for _, file := range f {
-			fmt.Println(file.Filename, file.Size, file.Header["Content-Type"][0])
-			// => "tutorial.pdf" 360641 "application/pdf"
-		}
+		return nil
 	}
 
-	file, err := ctx.FormFile("image")
+	description := ctx.FormValue("description")
+	if len(description) < 1 {
+		h.log.Debugw("createCard", "form.Value description", "bad description")
+		ctx.JSON(structs.SetResponse(http.StatusBadRequest, "bad description"))
+
+		return nil
+	}
+
+	alt := ctx.FormValue("alt")
+	if len(alt) < 1 {
+		h.log.Debugw("createCard", "form.Value alt", "bad description")
+		ctx.JSON(structs.SetResponse(http.StatusBadRequest, "bad description"))
+
+		return nil
+	}
+	file, err := ctx.FormFile("thumb")
+	h.log.Debugw("createCard", "file-name", file.Filename, "file-size", file.Size)
 	if err != nil {
-		h.log.Errorf("TEST", "val", err.Error())
-		return fmt.Errorf("cannot read image: %w", err)
+		h.log.Debugw("createCard", "form.File", err.Error())
+		ctx.JSON(structs.SetResponse(http.StatusInternalServerError, err.Error()))
+
+		return nil
 	}
 
-	card := core.Card{
-		Title: ctx.FormValue("Title"),
-		Alt:   ctx.FormValue("Alt"),
-		Image: "static/uploads/" + file.Filename,
+	if file.Size > 5000000 {
+		h.log.Debugw("createCard", "form.File", "file to large")
+		ctx.JSON(structs.SetResponse(http.StatusInternalServerError, "file to large"))
+
+		return nil
 	}
 
-	ctx.SaveFile(file, card.Image)
-	fmt.Printf("%+v\n", card)
-	if err := ctx.JSON(core.SetResponse(http.StatusOK, "success")); err != nil {
+	// card := structs.NewCard(title, uploadDirectory+file.Filename, alt, description)
+	card := structs.Card{
+		Title:       title,
+		Thumb:       uploadDirectory + file.Filename,
+		Alt:         alt,
+		Description: description,
+	}
+
+	h.Service.SaveCard(card)
+
+	if err := ctx.SaveFile(file, "static/uploads/"+file.Filename); err != nil {
+		h.log.Errorw("createCard", "SaveFile", err.Error())
+		ctx.JSON(structs.SetResponse(http.StatusInternalServerError, err.Error()))
+
+		return nil
+	}
+
+	if err := ctx.JSON(structs.SetResponse(http.StatusOK, "success")); err != nil {
 		return fmt.Errorf("some err: %w", err)
 	}
 

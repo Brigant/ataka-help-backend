@@ -2,10 +2,13 @@ package services
 
 import (
 	"fmt"
+
+	"github.com/baza-trainee/ataka-help-backend/app/structs"
 )
 
 type CardsRepo interface {
 	SelectAllCards() (string, error)
+	InsertCard(structs.Card) error
 }
 
 type CardsService struct {
@@ -19,4 +22,12 @@ func (s CardsService) ReturnCards() (string, error) {
 	}
 
 	return result, nil
+}
+
+func (s CardsService) SaveCard(card structs.Card) error {
+	if err := s.Repo.InsertCard(card); err != nil {
+		return fmt.Errorf("error happens while select: %w", err)
+	}
+
+	return nil
 }
