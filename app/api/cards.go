@@ -26,7 +26,7 @@ func NewCardsHandler(service CardService, log *logger.Logger) Card {
 func (h Card) getCards(ctx *fiber.Ctx) error {
 	result, err := h.Service.ReturnCards()
 	if err != nil {
-		return fmt.Errorf("cannot ReturnCarsd: %w", err)
+		return fmt.Errorf("cannot ReturnCards: %w", err)
 	}
 
 	h.log.Infow("TEST", "val", result)

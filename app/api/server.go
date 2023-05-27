@@ -31,6 +31,7 @@ func (s *Server) Shutdown(ctx context.Context) error {
 }
 
 func (s Server) initRoutes(app *fiber.App, handler Handler) {
-	app.Get("/", handler.Card.getCards)
+	app.Get("/cards", handler.Card.getCards)
 	app.Get("/partners", handler.Partner.Get)
+	app.Get("/slider", handler.Slider.getSlider)
 }

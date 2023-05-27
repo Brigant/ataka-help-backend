@@ -34,3 +34,7 @@ func (r Repo) SelectAllCards() (string, error) {
 func (r Repo) SelectAllPartners() (string, error) {
 	return "some partners from db", nil
 }
+
+func (r Repo) SelectSlider() (string, error) {
+	return "array of slider images from db", nil
+}
