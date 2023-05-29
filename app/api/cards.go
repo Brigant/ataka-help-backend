@@ -1,7 +1,9 @@
 package api
 
 import (
+	"errors"
 	"fmt"
+	"mime/multipart"
 	"net/http"
 
 	"github.com/baza-trainee/ataka-help-backend/app/logger"
@@ -9,11 +11,13 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-const uploadDirectory = "static/uploads/"
+const fileLimit = 5 * 1024 * 1024
+
+var requiredFormFields = []string{"title", "alt", "description"}
 
 type CardService interface {
 	ReturnCards() (string, error)
-	SaveCard(structs.Card) error
+	SaveCard(*multipart.Form, *fiber.Ctx) error
 }
 
 type CardHandler struct {
@@ -34,8 +38,6 @@ func (h CardHandler) getCards(ctx *fiber.Ctx) error {
 		return fmt.Errorf("cannot ReturnCarsd: %w", err)
 	}
 
-	h.log.Infow("TEST", "val", result)
-
 	if err := ctx.SendString(result); err != nil {
 		return fmt.Errorf("some err: %w", err)
 	}
@@ -44,67 +46,42 @@ func (h CardHandler) getCards(ctx *fiber.Ctx) error {
 }
 
 func (h CardHandler) createCard(ctx *fiber.Ctx) error {
-	ctx.Accepts("image/png/webp")
-
-	title := ctx.FormValue("title")
-
-	if len(title) < 4 || len(title) > 300 {
-		h.log.Debugw("createCard", "form.Value title", "bad title")
-		ctx.JSON(structs.SetResponse(http.StatusBadRequest, "bad title"))
-
-		return nil
-	}
-
-	description := ctx.FormValue("description")
-	if len(description) < 1 {
-		h.log.Debugw("createCard", "form.Value description", "bad description")
-		ctx.JSON(structs.SetResponse(http.StatusBadRequest, "bad description"))
-
-		return nil
-	}
-
-	alt := ctx.FormValue("alt")
-	if len(alt) < 1 {
-		h.log.Debugw("createCard", "form.Value alt", "bad description")
-		ctx.JSON(structs.SetResponse(http.StatusBadRequest, "bad description"))
-
-		return nil
-	}
-	file, err := ctx.FormFile("thumb")
-	h.log.Debugw("createCard", "file-name", file.Filename, "file-size", file.Size)
+	form, err := ctx.MultipartForm()
 	if err != nil {
-		h.log.Debugw("createCard", "form.File", err.Error())
-		ctx.JSON(structs.SetResponse(http.StatusInternalServerError, err.Error()))
-
-		return nil
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 
-	if file.Size > 5000000 {
-		h.log.Debugw("createCard", "form.File", "file to large")
-		ctx.JSON(structs.SetResponse(http.StatusInternalServerError, "file to large"))
-
-		return nil
+	if form.File["thumb"] == nil || form.File["thumb"][0].Size > fileLimit {
+		h.log.Debugw("createCard", "form.File", "required thumb not biger then 5 Mb")
+		return fiber.NewError(fiber.StatusBadRequest, "required thumb not biger then 5 Mb")
 	}
 
-	// card := structs.NewCard(title, uploadDirectory+file.Filename, alt, description)
-	card := structs.Card{
-		Title:       title,
-		Thumb:       uploadDirectory + file.Filename,
-		Alt:         alt,
-		Description: description,
+	if form.Value["title"] == nil || len(form.Value["title"][0]) < 4 || len(form.Value["title"][0]) > 300 {
+		h.log.Debugw("createCard", "form.Vlaues", "required title more than 3 letters and less than 300")
+		return fiber.NewError(fiber.StatusBadRequest, "required title more than 3 letters and less than 300")
 	}
 
-	h.Service.SaveCard(card)
+	if form.Value["alt"] == nil || len(form.Value["alt"][0]) < 1 {
+		h.log.Debugw("createCard", "form.Vlaues", "required alt")
+		return fiber.NewError(fiber.StatusBadRequest, "required alt")
+	}
 
-	if err := ctx.SaveFile(file, "static/uploads/"+file.Filename); err != nil {
-		h.log.Errorw("createCard", "SaveFile", err.Error())
-		ctx.JSON(structs.SetResponse(http.StatusInternalServerError, err.Error()))
+	if form.Value["description"] == nil || len(form.Value["description"][0]) < 2 {
+		h.log.Debugw("createCard", "form.Vlaues", "required description")
+		return fiber.NewError(fiber.StatusBadRequest, "required description")
+	}
 
-		return nil
+	if err := h.Service.SaveCard(form, ctx); err != nil {
+		if errors.Is(err, structs.ErrUniqueRestriction) {
+			h.log.Errorw("SaveCard", "error", err.Error())
+			return fiber.NewError(fiber.StatusBadRequest, err.Error())
+		}
+
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
 	if err := ctx.JSON(structs.SetResponse(http.StatusOK, "success")); err != nil {
-		return fmt.Errorf("some err: %w", err)
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
 	return nil

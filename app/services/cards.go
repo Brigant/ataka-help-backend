@@ -1,14 +1,20 @@
 package services
 
 import (
+	"context"
 	"fmt"
+	"mime/multipart"
+	"os"
 
 	"github.com/baza-trainee/ataka-help-backend/app/structs"
+	"github.com/gofiber/fiber/v2"
 )
+
+const uploadDirectory = "static/uploads/"
 
 type CardsRepo interface {
 	SelectAllCards() (string, error)
-	InsertCard(structs.Card) error
+	InsertCard(structs.Card, context.Context) error
 }
 
 type CardsService struct {
@@ -18,15 +24,32 @@ type CardsService struct {
 func (s CardsService) ReturnCards() (string, error) {
 	result, err := s.Repo.SelectAllCards()
 	if err != nil {
-		return "", fmt.Errorf("error happens while select: %w", err)
+		return "", fmt.Errorf("error happens while SelectAllCards: %w", err)
 	}
 
 	return result, nil
 }
 
-func (s CardsService) SaveCard(card structs.Card) error {
-	if err := s.Repo.InsertCard(card); err != nil {
-		return fmt.Errorf("error happens while select: %w", err)
+func (s CardsService) SaveCard(form *multipart.Form, ctx *fiber.Ctx) error {
+	file := form.File["thumb"][0]
+
+	card := structs.Card{
+		Title:       form.Value["title"][0],
+		Thumb:       uniqueFilePath(file.Filename, uploadDirectory),
+		Alt:         form.Value["alt"][0],
+		Description: form.Value["description"][0],
+	}
+
+	if err := ctx.SaveFile(file, card.Thumb); err != nil {
+		return fmt.Errorf("error happens while SaveFile: %w", err)
+	}
+
+	if err := s.Repo.InsertCard(card, ctx.Context()); err != nil {
+		if err := os.Remove(card.Thumb); err != nil {
+			return fmt.Errorf("error happens while remove file: %w", err)
+		}
+
+		return fmt.Errorf("error happens while InsertCard: %w", err)
 	}
 
 	return nil

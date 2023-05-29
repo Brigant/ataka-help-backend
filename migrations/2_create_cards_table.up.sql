@@ -7,7 +7,8 @@ CREATE TABLE "cards" (
   "created" Timestamp With Time Zone NOT NULL DEFAULT NOW(),
   "modified" Timestamp With Time Zone NOT NULL DEFAULT NOW(),
   PRIMARY KEY ("id"),
-  CONSTRAINT "unique_cards_id" UNIQUE("id")
+  CONSTRAINT "unique_cards_id" UNIQUE("id"),
+  CONSTRAINT "unique_cards_title" UNIQUE("title")
 );
 
 CREATE TRIGGER update_cards_modtime 

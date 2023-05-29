@@ -1,6 +1,7 @@
 package pg
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -40,20 +41,16 @@ func (r Repo) SelectAllCards() (string, error) {
 	return "some string from DB", nil
 }
 
-func (r Repo) InsertCard(card structs.Card) error {
+func (r Repo) InsertCard(card structs.Card, ctx context.Context) error {
 	const expectedEffectedRow = 1
 
 	query := `INSERT INTO public.cards
 	(title, thumb, alt, description)
 	VALUES(:title, :thumb, :alt, :description);`
 
-	result, err := r.db.NamedExec(query, &card)
+	result, err := r.db.NamedExecContext(ctx, query, &card)
 	if err != nil {
 		pqError := new(pq.Error)
-		if errors.As(err, &pqError) && pqError.Code.Name() == ErrCodeForeignKeyViolation {
-			return structs.ErrForeignViolation
-		}
-
 		if errors.As(err, &pqError) && pqError.Code.Name() == ErrCodeUniqueViolation {
 			return structs.ErrUniqueRestriction
 		}

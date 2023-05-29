@@ -12,10 +12,6 @@ info:
     name: Apache 2.0 or MIT or any other (We should choose)
     url: "http://www.apache.org/licenses/LICENSE-2.0.html"
 servers:
-  # Added by API Auto Mocking Plugin
-  # Added by API Auto Mocking Plugin
-  - description: SwaggerHub API Auto Mocking
-    url: https://virtserver.swaggerhub.com/SERGEYJULY/AttackHelp/0.1.0
   - description: For now only local server is possible
     url: "http://localhost:7000"
 tags:
@@ -32,7 +28,7 @@ tags:
   - name: reports
     description: This is the endpoint through which the administrator should upload the document with the activity report. 
 paths:
-  /cards:
+  /:
     get:
       tags:
         - cards
@@ -65,7 +61,34 @@ paths:
       summary: Add a new card to the store
       operationId: addCard
       requestBody:
-        $ref: "#/components/requestBodies/Card"
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - "thumb"
+                - "title"
+                - "alt"
+                - "description"
+              properties:
+                thumb:
+                  type: string
+                  format: base64
+                title:
+                  type: string
+                  minLength: 3
+                  maxLength: 300
+                alt:
+                  type: string
+                description:
+                  required:
+                    - "items"
+                  type: array
+                  items:
+                    type: string  
+            encoding:
+              thumb:
+                contentType: image/png, image/jpeg, image.jpg, image.webp      
       responses:
         "200": {$ref: "#/components/responses/Success"}
         "400": { $ref: "#/components/responses/BadRequest" }
@@ -641,7 +664,8 @@ components:
           maxLength: 300
           example: I was hacked
         thumb:
-          $ref: "#/components/schemas/Image"
+          type: string
+          example: static/uploads/some.jpg
         desctiptions:
           type: array
           items:
