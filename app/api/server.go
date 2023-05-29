@@ -19,7 +19,7 @@ func NewServer(cfg config.Config, handler Handler) *Server {
 		ReadTimeout:  cfg.Server.AppReadTimeout,
 		WriteTimeout: cfg.Server.AppWriteTimeout,
 		IdleTimeout:  cfg.Server.AppIdleTimeout,
-		BodyLimit:    5 * 1024 * 1024,
+		BodyLimit:    50 * 1024 * 1024,
 	}
 
 	server.HTTPServer = fiber.New(fconfig)
@@ -39,7 +39,7 @@ func (s *Server) Shutdown(ctx context.Context) error {
 
 func (s Server) initRoutes(app *fiber.App, h Handler) {
 	app.Get("/", h.Card.getCards)
-	app.Static("/", "../static")
+	app.Static("/static", "../static")
 	app.Post("/", h.Card.createCard)
 	app.Get("/partners", h.Partner.Get)
 }
