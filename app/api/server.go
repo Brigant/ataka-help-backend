@@ -34,4 +34,5 @@ func (s Server) initRoutes(app *fiber.App, handler Handler) {
 	app.Get("/cards", handler.Card.getCards)
 	app.Get("/partners", handler.Partner.Get)
 	app.Get("/slider", handler.Slider.getSlider)
+	app.Post("/sldier", handler.Slider.createSlider)
 }

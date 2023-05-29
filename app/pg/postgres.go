@@ -1,15 +1,25 @@
 package pg
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/baza-trainee/ataka-help-backend/app/config"
+	"github.com/baza-trainee/ataka-help-backend/app/structs"
 	"github.com/jmoiron/sqlx"
-	_ "github.com/lib/pq" // nececarry blank import
+	"github.com/lib/pq"
+)
+
+const (
+	expectedAffectedRow        = 1
+	ErrCodeUniqueViolation     = "unique_violation"
+	ErrCodeNoData              = "no_data"
+	ErrCodeForeignKeyViolation = "foreign_key_violation"
+	ErrCodeUndefinedColumn     = "undefined_column"
 )
 
 type Repo struct {
-	db sqlx.DB
+	db *sqlx.DB
 }
 
 // Returns an object of the Ropository.
@@ -20,7 +30,7 @@ func NewRepository(cfg config.Config) (Repo, error) {
 		return Repo{}, fmt.Errorf("cannot connect to db: %w", err)
 	}
 
-	return Repo{db: *database}, nil
+	return Repo{db: database}, nil
 }
 
 func (r Repo) Close() error {
@@ -37,4 +47,35 @@ func (r Repo) SelectAllPartners() (string, error) {
 
 func (r Repo) SelectSlider() (string, error) {
 	return "array of slider images from db", nil
+}
+
+func (r Repo) InsertSlider(slider structs.Slider) error {
+
+	query := `INSERT INTO public.slider (title, thumb, alt, description)
+			  VALUES(:title, :thumb);`
+
+	result, err := r.db.NamedExec(query, slider)
+	if err != nil {
+		pqError := new(pq.Error)
+		if errors.As(err, &pqError) && pqError.Code.Name() == ErrCodeForeignKeyViolation {
+			return structs.ErrForeignViolation
+		}
+
+		if errors.As(err, &pqError) && pqError.Code.Name() == ErrCodeUniqueViolation {
+			return structs.ErrUniqueRestriction
+		}
+
+		return fmt.Errorf("error in NamedEx: %w", err)
+	}
+
+	effectedRows, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("the error is in RowsAffected: %w", err)
+	}
+
+	if effectedRows != expectedAffectedRow {
+		return structs.ErrDatabaseInserting
+	}
+
+	return nil
 }
