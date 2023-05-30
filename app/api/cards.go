@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"mime/multipart"
@@ -16,7 +17,7 @@ const fileLimit = 5 * 1024 * 1024
 var requiredFormFields = []string{"title", "alt", "description"}
 
 type CardService interface {
-	ReturnCards() (string, error)
+	ReturnCards(offset, limit int, ctx context.Context) ([]structs.Card, int, error)
 	SaveCard(*multipart.Form, *fiber.Ctx) error
 }
 
@@ -33,12 +34,13 @@ func NewCardsHandler(service CardService, log *logger.Logger) CardHandler {
 }
 
 func (h CardHandler) getCards(ctx *fiber.Ctx) error {
-	result, err := h.Service.ReturnCards()
+	cards, total, err := h.Service.ReturnCards(1, 6, ctx.Context())
 	if err != nil {
 		return fmt.Errorf("cannot ReturnCarsd: %w", err)
 	}
 
-	if err := ctx.SendString(result); err != nil {
+	_ = total
+	if err := ctx.JSON(cards); err != nil {
 		return fmt.Errorf("some err: %w", err)
 	}
 

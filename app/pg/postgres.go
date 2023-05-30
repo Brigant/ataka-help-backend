@@ -2,6 +2,7 @@ package pg
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 
@@ -37,8 +38,24 @@ func (r Repo) Close() error {
 	return r.db.Close()
 }
 
-func (r Repo) SelectAllCards() (string, error) {
-	return "some string from DB", nil
+func (r Repo) SelectAllCards(offest, limit int, ctx context.Context) ([]structs.Card, error) {
+	query := `
+		SELECT * FROM public.cards c
+		ORDER BY c.created DESC
+		Limit $1
+		OFFSET $2;
+	`
+	cards := []structs.Card{}
+
+	if err := r.db.SelectContext(ctx, cards, query, limit, offest); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, structs.ErrNotFound
+		}
+
+		return nil, fmt.Errorf("an error occurs while getting the cards list: %w", err)
+	}
+
+	return cards, nil
 }
 
 func (r Repo) InsertCard(card structs.Card, ctx context.Context) error {
@@ -48,7 +65,7 @@ func (r Repo) InsertCard(card structs.Card, ctx context.Context) error {
 	(title, thumb, alt, description)
 	VALUES(:title, :thumb, :alt, :description);`
 
-	result, err := r.db.NamedExecContext(ctx, query, &card)
+	result, err := r.db.NamedExecContext(ctx, query, card)
 	if err != nil {
 		pqError := new(pq.Error)
 		if errors.As(err, &pqError) && pqError.Code.Name() == ErrCodeUniqueViolation {

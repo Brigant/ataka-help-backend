@@ -13,7 +13,7 @@ import (
 const uploadDirectory = "static/uploads/"
 
 type CardsRepo interface {
-	SelectAllCards() (string, error)
+	SelectAllCards(offest, limit int, ctx context.Context) ([]structs.Card, error)
 	InsertCard(structs.Card, context.Context) error
 }
 
@@ -21,13 +21,13 @@ type CardsService struct {
 	Repo CardsRepo
 }
 
-func (s CardsService) ReturnCards() (string, error) {
-	result, err := s.Repo.SelectAllCards()
+func (s CardsService) ReturnCards(offset, limit int, ctx context.Context) ([]structs.Card, int, error) {
+	cards, err := s.Repo.SelectAllCards(6, 1, ctx)
 	if err != nil {
-		return "", fmt.Errorf("error happens while SelectAllCards: %w", err)
+		return nil, 0, fmt.Errorf("error happens while SelectAllCards: %w", err)
 	}
 
-	return result, nil
+	return cards, 0, nil
 }
 
 func (s CardsService) SaveCard(form *multipart.Form, ctx *fiber.Ctx) error {

@@ -16,6 +16,12 @@ type Card struct {
 	Modified    time.Time `json:"modified" db:"modified"`
 }
 
+type CardsResponse struct {
+	Code  int    `json:"code"`
+	Tolal int    `json:"total"`
+	Data  []Card `json:"data"`
+}
+
 // func NewCard(title, thumb, alt, description string) Card {
 // 	return Card{
 // 		Title:       title,

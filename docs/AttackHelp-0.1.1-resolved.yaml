@@ -48,6 +48,9 @@ paths:
                   status: 
                     type: integer
                     example: 200
+                  total:
+                    type: integer
+                    example: 14
                   data:
                     type: array
                     items:
