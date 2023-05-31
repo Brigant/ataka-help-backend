@@ -2,7 +2,6 @@ package pg
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -79,14 +78,9 @@ func (r Repo) InsertCard(ctx context.Context, card structs.Card) error {
 
 	query := `INSERT INTO public.cards
 	(title, thumb, alt, description)
-	VALUES($1, $2, $3, $4::jsonb);`
+	VALUES($1, $2, $3, $4::json);`
 
-	jsonDescription, err := json.Marshal(card.Description)
-	if err != nil {
-		return fmt.Errorf("marshal error: %w", err)
-	}
-
-	result, err := r.db.ExecContext(ctx, query, card.Title, card.Thumb, card.Alt, jsonDescription)
+	result, err := r.db.ExecContext(ctx, query, card.Title, card.Thumb, card.Alt, card.Description)
 	if err != nil {
 		pqError := new(pq.Error)
 		if errors.As(err, &pqError) && pqError.Code.Name() == ErrCodeUniqueViolation {

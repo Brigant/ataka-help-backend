@@ -2,16 +2,18 @@ package services
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
+	"io"
 	"mime/multipart"
 	"os"
 
 	"github.com/baza-trainee/ataka-help-backend/app/structs"
-	"github.com/gofiber/fiber/v2"
 )
 
-const uploadDirectory = "static/uploads/"
+const (
+	uploadDirectory = "static/uploads/"
+	filePermition   = 0o666
+)
 
 type CardsRepo interface {
 	SelectAllCards(context.Context, structs.CardQueryParameters) ([]structs.Card, error)
@@ -37,26 +39,34 @@ func (s CardsService) ReturnCards(ctx context.Context, params structs.CardQueryP
 	return cards, total, nil
 }
 
-func (s CardsService) SaveCard(ctx *fiber.Ctx, form *multipart.Form) error {
-	file := form.File["thumb"][0]
-
-	descr, err := json.Marshal(form.Value["description"][0])
-	if err != nil {
-		return fmt.Errorf("error happens while Marshal description: %w", err)
-	}
+func (s CardsService) SaveCard(ctx context.Context, form *multipart.Form) error {
+	fileHeader := form.File["thumb"][0]
 
 	card := structs.Card{
 		Title:       form.Value["title"][0],
-		Thumb:       uniqueFilePath(file.Filename, uploadDirectory),
+		Thumb:       uniqueFilePath(fileHeader.Filename, uploadDirectory),
 		Alt:         form.Value["alt"][0],
-		Description: descr,
+		Description: []byte(form.Value["description"][0]),
 	}
 
-	if err := ctx.SaveFile(file, card.Thumb); err != nil {
-		return fmt.Errorf("error happens while SaveFile: %w", err)
+	file, err := fileHeader.Open()
+	if err != nil {
+		return fmt.Errorf("error happens while fileHeader.Open(): %w", err)
 	}
 
-	if err := s.Repo.InsertCard(ctx.Context(), card); err != nil {
+	osFile, err := os.OpenFile(card.Thumb, os.O_WRONLY|os.O_CREATE, filePermition)
+	if err != nil {
+		return fmt.Errorf("error happens while os.OpenFile(): %w", err)
+	}
+
+	defer osFile.Close()
+
+	written, err := io.Copy(osFile, file)
+	if err != nil {
+		return fmt.Errorf(" written bytes: %v, error happens while io.Copy(): %w", written, err)
+	}
+
+	if err := s.Repo.InsertCard(ctx, card); err != nil {
 		if err := os.Remove(card.Thumb); err != nil {
 			return fmt.Errorf("error happens while remove file: %w", err)
 		}

@@ -70,10 +70,7 @@ func (s Server) initRoutes(app *fiber.App, h Handler) {
 
 func corsConfig() cors.Config {
 	return cors.Config{
-		AllowOrigins: `
-			http://foradmin.fun, https://foradmin.fun, http://localhost:3000, https://localhost:3000,
-			https://ataka-help.vercel.app,	http://ataka-help.vercel.app`,
-		// AllowOrigins: "*",
+		AllowOrigins: `https://ataka-help.vercel.app`,
 		AllowHeaders: "Origin, Content-Type, Accept",
 		AllowMethods: "GET, POST, PUT, DELETE",
 	}

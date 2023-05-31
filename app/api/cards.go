@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"mime/multipart"
-	"net/http"
 
 	"github.com/baza-trainee/ataka-help-backend/app/logger"
 	"github.com/baza-trainee/ataka-help-backend/app/structs"
@@ -17,11 +16,11 @@ const (
 	defaultOffset = 0
 )
 
-var allowedContentType = []string{"image/jpg", "image/jpeg", "image/webp"}
+var allowedContentType = []string{"image/jpg", "image/jpeg", "image/webp", "image/png"}
 
 type CardService interface {
 	ReturnCards(context.Context, structs.CardQueryParameters) ([]structs.Card, int, error)
-	SaveCard(*fiber.Ctx, *multipart.Form) error
+	SaveCard(context.Context, *multipart.Form) error
 }
 
 type CardHandler struct {
@@ -57,11 +56,7 @@ func (h CardHandler) getCards(ctx *fiber.Ctx) error {
 		Cards: cards,
 	}
 
-	if err := ctx.JSON(response); err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
-	}
-
-	return nil
+	return ctx.Status(fiber.StatusOK).JSON(response) // nolint
 }
 
 // nolint: cyclop
@@ -73,31 +68,26 @@ func (h CardHandler) createCard(ctx *fiber.Ctx) error {
 
 	fileHeader := form.File["thumb"][0]
 
-	if fileHeader == nil || fileHeader.Size > fileLimit || !isAllowedContentType(allowedContentType, fileHeader.Header["Content-Type"][0]) {
+	switch {
+	case fileHeader == nil || fileHeader.Size > fileLimit || !isAllowedContentType(allowedContentType, fileHeader.Header["Content-Type"][0]):
 		h.log.Debugw("createCard", "form.File", "required thumb not biger then 5 Mb and format jpg/jpeg/webp")
 
 		return fiber.NewError(fiber.StatusBadRequest, "required thumb not bigger then 5 Mb and format jpg/jpeg/webp")
-	}
-
-	if form.Value["title"] == nil || len(form.Value["title"][0]) < 4 || len(form.Value["title"][0]) > 300 {
+	case form.Value["title"] == nil || len(form.Value["title"][0]) < 4 || len(form.Value["title"][0]) > 300:
 		h.log.Debugw("createCard", "form.Vlaues", "required title more than 3 letters and less than 300")
 
 		return fiber.NewError(fiber.StatusBadRequest, "required title more than 3 letters and less than 300")
-	}
-
-	if form.Value["alt"] == nil || len(form.Value["alt"][0]) < 1 {
+	case form.Value["alt"] == nil || len(form.Value["alt"][0]) < 1:
 		h.log.Debugw("createCard", "form.Vlaues", "required alt")
 
 		return fiber.NewError(fiber.StatusBadRequest, "required alt")
-	}
-
-	if form.Value["description"] == nil || len(form.Value["description"][0]) < 2 {
+	case form.Value["description"] == nil || len(form.Value["description"][0]) < 3:
 		h.log.Debugw("createCard", "form.Vlaues", "required description")
 
 		return fiber.NewError(fiber.StatusBadRequest, "required description")
 	}
 
-	if err := h.Service.SaveCard(ctx, form); err != nil {
+	if err := h.Service.SaveCard(ctx.Context(), form); err != nil {
 		if errors.Is(err, structs.ErrUniqueRestriction) {
 			h.log.Errorw("SaveCard", "error", err.Error())
 
@@ -107,11 +97,7 @@ func (h CardHandler) createCard(ctx *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
-	if err := ctx.JSON(structs.SetResponse(http.StatusOK, "success")); err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
-	}
-
-	return nil
+	return ctx.Status(fiber.StatusCreated).JSON(structs.SetResponse(fiber.StatusCreated, "success")) // nolint
 }
 
 func isAllowedContentType(allowedList []string, contentType string) bool {
