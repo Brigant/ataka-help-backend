@@ -2,7 +2,7 @@ package pg
 
 import (
 	"context"
-	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -38,21 +38,32 @@ func (r Repo) Close() error {
 	return r.db.Close()
 }
 
-func (r Repo) SelectAllCards(offest, limit int, ctx context.Context) ([]structs.Card, error) {
+func (r Repo) SelectAllCards(params structs.CardQueryParameters, ctx context.Context) ([]structs.Card, error) {
 	query := `
-		SELECT * FROM public.cards c
+		SELECT id, title, thumb, alt, description, created, modified
+		FROM public.cards c
 		ORDER BY c.created DESC
 		Limit $1
 		OFFSET $2;
 	`
 	cards := []structs.Card{}
 
-	if err := r.db.SelectContext(ctx, cards, query, limit, offest); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, structs.ErrNotFound
+	rows, err := r.db.QueryContext(ctx, query, params.Limit, params.Offset)
+	if err != nil {
+		return nil, fmt.Errorf("an error occurs while QueryContext: %w", err)
+	}
+
+	for rows.Next() {
+		card := structs.Card{}
+
+		if err := rows.Scan(
+			&card.ID, &card.Title, &card.Thumb, &card.Alt,
+			&card.Description, &card.Created, &card.Modified); err != nil {
+			return nil, fmt.Errorf("an error occurs while rows.Scan: %w", err)
 		}
 
-		return nil, fmt.Errorf("an error occurs while getting the cards list: %w", err)
+		cards = append(cards, card)
+
 	}
 
 	return cards, nil
@@ -63,9 +74,14 @@ func (r Repo) InsertCard(card structs.Card, ctx context.Context) error {
 
 	query := `INSERT INTO public.cards
 	(title, thumb, alt, description)
-	VALUES(:title, :thumb, :alt, :description);`
+	VALUES($1, $2, $3, $4::jsonb);`
 
-	result, err := r.db.NamedExecContext(ctx, query, card)
+	jsonDescription, err := json.Marshal(card.Description)
+	if err != nil {
+		return fmt.Errorf("marshal error: %w", err)
+	}
+
+	result, err := r.db.ExecContext(ctx, query, card.Title, card.Thumb, card.Alt, jsonDescription)
 	if err != nil {
 		pqError := new(pq.Error)
 		if errors.As(err, &pqError) && pqError.Code.Name() == ErrCodeUniqueViolation {
@@ -85,6 +101,15 @@ func (r Repo) InsertCard(card structs.Card, ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func (r Repo) CountRowsTable(table string, ctx context.Context) (int, error) {
+	query := `SELECT count(*) as result FROM public.` + table
+	var total int
+	r.db.GetContext(ctx, &total, query)
+
+	fmt.Println(total)
+	return total, nil
 }
 
 func (r Repo) SelectAllPartners() (string, error) {

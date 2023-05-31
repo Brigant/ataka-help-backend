@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 	"errors"
-	"fmt"
 	"mime/multipart"
 	"net/http"
 
@@ -12,12 +11,16 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-const fileLimit = 5 * 1024 * 1024
+const (
+	fileLimit     = 5 * 1024 * 1024
+	defaultLimit  = 6
+	defaultOffset = 0
+)
 
-var requiredFormFields = []string{"title", "alt", "description"}
+var allowedContentType = []string{"image/jpg", "image/jpeg", "image/webp"}
 
 type CardService interface {
-	ReturnCards(offset, limit int, ctx context.Context) ([]structs.Card, int, error)
+	ReturnCards(structs.CardQueryParameters, context.Context) ([]structs.Card, int, error)
 	SaveCard(*multipart.Form, *fiber.Ctx) error
 }
 
@@ -34,14 +37,27 @@ func NewCardsHandler(service CardService, log *logger.Logger) CardHandler {
 }
 
 func (h CardHandler) getCards(ctx *fiber.Ctx) error {
-	cards, total, err := h.Service.ReturnCards(1, 6, ctx.Context())
-	if err != nil {
-		return fmt.Errorf("cannot ReturnCarsd: %w", err)
+	params := structs.CardQueryParameters{
+		Limit:  defaultLimit,
+		Offset: defaultOffset,
 	}
 
-	_ = total
-	if err := ctx.JSON(cards); err != nil {
-		return fmt.Errorf("some err: %w", err)
+	if err := ctx.QueryParser(&params); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	}
+
+	cards, total, err := h.Service.ReturnCards(params, ctx.Context())
+	if err != nil && !errors.Is(err, structs.ErrNotFound) {
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	}
+
+	response := structs.CardsResponse{
+		Code:  fiber.StatusOK,
+		Tolal: total,
+		Cards:  cards,
+	}
+	if err := ctx.JSON(response); err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
 	return nil
@@ -53,9 +69,11 @@ func (h CardHandler) createCard(ctx *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 
-	if form.File["thumb"] == nil || form.File["thumb"][0].Size > fileLimit {
-		h.log.Debugw("createCard", "form.File", "required thumb not biger then 5 Mb")
-		return fiber.NewError(fiber.StatusBadRequest, "required thumb not biger then 5 Mb")
+	fileHeader := form.File["thumb"][0]
+
+	if fileHeader == nil || fileHeader.Size > fileLimit || !isAllowedContentType(allowedContentType, fileHeader.Header["Content-Type"][0]) {
+		h.log.Debugw("createCard", "form.File", "required thumb not biger then 5 Mb and format jpg/jpeg/webp")
+		return fiber.NewError(fiber.StatusBadRequest, "required thumb not biger then 5 Mb and format jpg/jpeg/webp")
 	}
 
 	if form.Value["title"] == nil || len(form.Value["title"][0]) < 4 || len(form.Value["title"][0]) > 300 {
@@ -87,4 +105,14 @@ func (h CardHandler) createCard(ctx *fiber.Ctx) error {
 	}
 
 	return nil
+}
+
+func isAllowedContentType(allowedList []string, contentType string) bool {
+	for _, i := range allowedList {
+		if i == contentType {
+			return true
+		}
+	}
+
+	return false
 }

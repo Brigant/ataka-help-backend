@@ -20,3 +20,4 @@ func NewHandler(services ServiceInterfaces, log *logger.Logger) Handler {
 		Partner: NewParnerHandler(services, log),
 	}
 }
+

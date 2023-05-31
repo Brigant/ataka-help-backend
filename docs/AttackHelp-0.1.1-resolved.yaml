@@ -51,7 +51,7 @@ paths:
                   total:
                     type: integer
                     example: 14
-                  data:
+                  cards:
                     type: array
                     items:
                       $ref: "#/components/schemas/Card"
