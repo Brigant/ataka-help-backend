@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/baza-trainee/ataka-help-backend/app/config"
 	"github.com/gofiber/fiber/v2"
@@ -10,6 +11,8 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 )
+
+const bodyLimit = 50 * 1024 * 1024
 
 type Server struct {
 	HTTPServer *fiber.App
@@ -22,7 +25,7 @@ func NewServer(cfg config.Config, handler Handler) *Server {
 		ReadTimeout:  cfg.Server.AppReadTimeout,
 		WriteTimeout: cfg.Server.AppWriteTimeout,
 		IdleTimeout:  cfg.Server.AppIdleTimeout,
-		BodyLimit:    50 * 1024 * 1024,
+		BodyLimit:    bodyLimit,
 		ErrorHandler: func(ctx *fiber.Ctx, err error) error {
 			code := fiber.StatusInternalServerError
 
@@ -34,8 +37,7 @@ func NewServer(cfg config.Config, handler Handler) *Server {
 			ctx.Status(code)
 
 			if err := ctx.JSON(err); err != nil {
-				// In case the SendFile fails
-				return ctx.Status(fiber.StatusInternalServerError).SendString("Internal Server Error")
+				return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 			}
 
 			return nil
@@ -56,7 +58,7 @@ func NewServer(cfg config.Config, handler Handler) *Server {
 }
 
 func (s *Server) Shutdown(ctx context.Context) error {
-	return s.HTTPServer.ShutdownWithContext(ctx)
+	return fmt.Errorf("shutdown error: %w", s.HTTPServer.ShutdownWithContext(ctx))
 }
 
 func (s Server) initRoutes(app *fiber.App, h Handler) {
@@ -68,8 +70,10 @@ func (s Server) initRoutes(app *fiber.App, h Handler) {
 
 func corsConfig() cors.Config {
 	return cors.Config{
-		// AllowOrigins: "http://foradmin.fun, https://foradmin.fun, http://localhost:3000, https://localhost:3000,	https://ataka-help.vercel.app,	http://ataka-help.vercel.app",
-		AllowOrigins: "*",
+		AllowOrigins: `
+			http://foradmin.fun, https://foradmin.fun, http://localhost:3000, https://localhost:3000,
+			https://ataka-help.vercel.app,	http://ataka-help.vercel.app`,
+		// AllowOrigins: "*",
 		AllowHeaders: "Origin, Content-Type, Accept",
 		AllowMethods: "GET, POST, PUT, DELETE",
 	}

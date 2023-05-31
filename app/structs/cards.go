@@ -19,7 +19,7 @@ type Card struct {
 
 type CardsResponse struct {
 	Code  int    `json:"code"`
-	Tolal int    `json:"total"`
+	Total int    `json:"total"`
 	Cards []Card `json:"cards"`
 }
 

@@ -35,10 +35,10 @@ func NewRepository(cfg config.Config) (Repo, error) {
 }
 
 func (r Repo) Close() error {
-	return r.db.Close()
+	return fmt.Errorf("error hapens while db.close: %w", r.db.Close())
 }
 
-func (r Repo) SelectAllCards(params structs.CardQueryParameters, ctx context.Context) ([]structs.Card, error) {
+func (r Repo) SelectAllCards(ctx context.Context, params structs.CardQueryParameters) ([]structs.Card, error) {
 	query := `
 		SELECT id, title, thumb, alt, description, created, modified
 		FROM public.cards c
@@ -53,6 +53,12 @@ func (r Repo) SelectAllCards(params structs.CardQueryParameters, ctx context.Con
 		return nil, fmt.Errorf("an error occurs while QueryContext: %w", err)
 	}
 
+	defer rows.Close()
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("an error occurs while rows.Err(): %w", err)
+	}
+
 	for rows.Next() {
 		card := structs.Card{}
 
@@ -63,13 +69,12 @@ func (r Repo) SelectAllCards(params structs.CardQueryParameters, ctx context.Con
 		}
 
 		cards = append(cards, card)
-
 	}
 
 	return cards, nil
 }
 
-func (r Repo) InsertCard(card structs.Card, ctx context.Context) error {
+func (r Repo) InsertCard(ctx context.Context, card structs.Card) error {
 	const expectedEffectedRow = 1
 
 	query := `INSERT INTO public.cards
@@ -103,12 +108,15 @@ func (r Repo) InsertCard(card structs.Card, ctx context.Context) error {
 	return nil
 }
 
-func (r Repo) CountRowsTable(table string, ctx context.Context) (int, error) {
+func (r Repo) CountRowsTable(ctx context.Context, table string) (int, error) {
 	query := `SELECT count(*) as result FROM public.` + table
-	var total int
-	r.db.GetContext(ctx, &total, query)
 
-	fmt.Println(total)
+	var total int
+
+	if err := r.db.GetContext(ctx, &total, query); err != nil {
+		return 0, fmt.Errorf("error in GetContext: %w", err)
+	}
+
 	return total, nil
 }
 

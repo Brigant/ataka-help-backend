@@ -14,22 +14,22 @@ import (
 const uploadDirectory = "static/uploads/"
 
 type CardsRepo interface {
-	SelectAllCards(structs.CardQueryParameters, context.Context) ([]structs.Card, error)
-	InsertCard(structs.Card, context.Context) error
-	CountRowsTable(string, context.Context) (int, error)
+	SelectAllCards(context.Context, structs.CardQueryParameters) ([]structs.Card, error)
+	InsertCard(context.Context, structs.Card) error
+	CountRowsTable(context.Context, string) (int, error)
 }
 
 type CardsService struct {
 	Repo CardsRepo
 }
 
-func (s CardsService) ReturnCards(params structs.CardQueryParameters, ctx context.Context) ([]structs.Card, int, error) {
-	cards, err := s.Repo.SelectAllCards(params, ctx)
+func (s CardsService) ReturnCards(ctx context.Context, params structs.CardQueryParameters) ([]structs.Card, int, error) {
+	cards, err := s.Repo.SelectAllCards(ctx, params)
 	if err != nil {
 		return nil, 0, fmt.Errorf("error happens while SelectAllCards: %w", err)
 	}
 
-	total, err := s.Repo.CountRowsTable("cards", ctx)
+	total, err := s.Repo.CountRowsTable(ctx, "cards")
 	if err != nil {
 		return nil, 0, fmt.Errorf("error happens while CountRowsTable: %w", err)
 	}
@@ -37,7 +37,7 @@ func (s CardsService) ReturnCards(params structs.CardQueryParameters, ctx contex
 	return cards, total, nil
 }
 
-func (s CardsService) SaveCard(form *multipart.Form, ctx *fiber.Ctx) error {
+func (s CardsService) SaveCard(ctx *fiber.Ctx, form *multipart.Form) error {
 	file := form.File["thumb"][0]
 
 	descr, err := json.Marshal(form.Value["description"][0])
@@ -56,7 +56,7 @@ func (s CardsService) SaveCard(form *multipart.Form, ctx *fiber.Ctx) error {
 		return fmt.Errorf("error happens while SaveFile: %w", err)
 	}
 
-	if err := s.Repo.InsertCard(card, ctx.Context()); err != nil {
+	if err := s.Repo.InsertCard(ctx.Context(), card); err != nil {
 		if err := os.Remove(card.Thumb); err != nil {
 			return fmt.Errorf("error happens while remove file: %w", err)
 		}

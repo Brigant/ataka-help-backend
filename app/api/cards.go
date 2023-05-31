@@ -20,8 +20,8 @@ const (
 var allowedContentType = []string{"image/jpg", "image/jpeg", "image/webp"}
 
 type CardService interface {
-	ReturnCards(structs.CardQueryParameters, context.Context) ([]structs.Card, int, error)
-	SaveCard(*multipart.Form, *fiber.Ctx) error
+	ReturnCards(context.Context, structs.CardQueryParameters) ([]structs.Card, int, error)
+	SaveCard(*fiber.Ctx, *multipart.Form) error
 }
 
 type CardHandler struct {
@@ -46,16 +46,17 @@ func (h CardHandler) getCards(ctx *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 
-	cards, total, err := h.Service.ReturnCards(params, ctx.Context())
+	cards, total, err := h.Service.ReturnCards(ctx.Context(), params)
 	if err != nil && !errors.Is(err, structs.ErrNotFound) {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
 	response := structs.CardsResponse{
 		Code:  fiber.StatusOK,
-		Tolal: total,
-		Cards:  cards,
+		Total: total,
+		Cards: cards,
 	}
+
 	if err := ctx.JSON(response); err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
@@ -63,6 +64,7 @@ func (h CardHandler) getCards(ctx *fiber.Ctx) error {
 	return nil
 }
 
+// nolint: cyclop
 func (h CardHandler) createCard(ctx *fiber.Ctx) error {
 	form, err := ctx.MultipartForm()
 	if err != nil {
@@ -73,27 +75,32 @@ func (h CardHandler) createCard(ctx *fiber.Ctx) error {
 
 	if fileHeader == nil || fileHeader.Size > fileLimit || !isAllowedContentType(allowedContentType, fileHeader.Header["Content-Type"][0]) {
 		h.log.Debugw("createCard", "form.File", "required thumb not biger then 5 Mb and format jpg/jpeg/webp")
-		return fiber.NewError(fiber.StatusBadRequest, "required thumb not biger then 5 Mb and format jpg/jpeg/webp")
+
+		return fiber.NewError(fiber.StatusBadRequest, "required thumb not bigger then 5 Mb and format jpg/jpeg/webp")
 	}
 
 	if form.Value["title"] == nil || len(form.Value["title"][0]) < 4 || len(form.Value["title"][0]) > 300 {
 		h.log.Debugw("createCard", "form.Vlaues", "required title more than 3 letters and less than 300")
+
 		return fiber.NewError(fiber.StatusBadRequest, "required title more than 3 letters and less than 300")
 	}
 
 	if form.Value["alt"] == nil || len(form.Value["alt"][0]) < 1 {
 		h.log.Debugw("createCard", "form.Vlaues", "required alt")
+
 		return fiber.NewError(fiber.StatusBadRequest, "required alt")
 	}
 
 	if form.Value["description"] == nil || len(form.Value["description"][0]) < 2 {
 		h.log.Debugw("createCard", "form.Vlaues", "required description")
+
 		return fiber.NewError(fiber.StatusBadRequest, "required description")
 	}
 
-	if err := h.Service.SaveCard(form, ctx); err != nil {
+	if err := h.Service.SaveCard(ctx, form); err != nil {
 		if errors.Is(err, structs.ErrUniqueRestriction) {
 			h.log.Errorw("SaveCard", "error", err.Error())
+
 			return fiber.NewError(fiber.StatusBadRequest, err.Error())
 		}
 

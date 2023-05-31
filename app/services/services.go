@@ -30,7 +30,7 @@ func uniqueFilePath(fileName, path string) string {
 
 	uniqueFileName := uuid.New().String() + "." + fileExt
 
-	result := "static/uploads/" + uniqueFileName
+	result := path + uniqueFileName
 
 	return result
 }
