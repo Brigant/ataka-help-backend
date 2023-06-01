@@ -1,6 +1,7 @@
 package pg
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -49,12 +50,12 @@ func (r Repo) SelectSlider() (string, error) {
 	return "array of slider images from db", nil
 }
 
-func (r Repo) InsertSlider(slider structs.Slider) error {
+func (r Repo) InsertSlider(slider structs.Slider, ctx context.Context) error {
 
 	query := `INSERT INTO public.slider (title, thumb, alt, description)
 			  VALUES(:title, :thumb);`
 
-	result, err := r.db.NamedExec(query, slider)
+	result, err := r.db.ExecContext(ctx, query, slider.Title, slider.Thumb)
 	if err != nil {
 		pqError := new(pq.Error)
 		if errors.As(err, &pqError) && pqError.Code.Name() == ErrCodeForeignKeyViolation {
@@ -65,7 +66,7 @@ func (r Repo) InsertSlider(slider structs.Slider) error {
 			return structs.ErrUniqueRestriction
 		}
 
-		return fmt.Errorf("error in NamedEx: %w", err)
+		return fmt.Errorf("error in ExecContext: %w", err)
 	}
 
 	effectedRows, err := result.RowsAffected()
