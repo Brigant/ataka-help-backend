@@ -4,7 +4,7 @@ info:
     This is a sample Attacka Help server.  You can find
     out more about protject at the our
     [discord](https://discord.gg/GXSGbyQ3) server
-  version: "0.0.1"
+  version: "0.1.1"
   title: Swagger Attacka Help
   contact:
     email: sergeyjuly@gmail.com
@@ -12,10 +12,6 @@ info:
     name: Apache 2.0 or MIT or any other (We should choose)
     url: "http://www.apache.org/licenses/LICENSE-2.0.html"
 servers:
-  # Added by API Auto Mocking Plugin
-  # Added by API Auto Mocking Plugin
-  - description: SwaggerHub API Auto Mocking
-    url: https://virtserver.swaggerhub.com/SERGEYJULY/AttackHelp/0.1.0
   - description: For now only local server is possible
     url: "http://localhost:7000"
 tags:
@@ -23,8 +19,6 @@ tags:
     description: Card is the main entity of the information carier.
   - name: users
     description: Operations about user authorization.
-  - name: categories
-    description: It describes the operations which are possible to execute over the category entity.
   - name: feedback
     description: This is the endpoint through which the user can fill out the form and send feedback.
   - name: slider
@@ -34,12 +28,15 @@ tags:
   - name: reports
     description: This is the endpoint through which the administrator should upload the document with the activity report. 
 paths:
-  /cards:
+  /:
     get:
       tags:
         - cards
       summary: Returns the cards array
       operationId: getAllCards
+      parameters:
+        - $ref: "#/components/parameters/offset"
+        - $ref: "#/components/parameters/limit"
       responses:
         "200":
           description: A successful response.
@@ -51,7 +48,10 @@ paths:
                   status: 
                     type: integer
                     example: 200
-                  data:
+                  total:
+                    type: integer
+                    example: 14
+                  cards:
                     type: array
                     items:
                       $ref: "#/components/schemas/Card"
@@ -64,7 +64,34 @@ paths:
       summary: Add a new card to the store
       operationId: addCard
       requestBody:
-        $ref: "#/components/requestBodies/Card"
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - "thumb"
+                - "title"
+                - "alt"
+                - "description"
+              properties:
+                thumb:
+                  type: string
+                  format: base64
+                title:
+                  type: string
+                  minLength: 3
+                  maxLength: 300
+                alt:
+                  type: string
+                description:
+                  required:
+                    - "items"
+                  type: array
+                  items:
+                    type: string  
+            encoding:
+              thumb:
+                contentType: image/png, image/jpeg, image.jpg, image.webp      
       responses:
         "200": {$ref: "#/components/responses/Success"}
         "400": { $ref: "#/components/responses/BadRequest" }
@@ -72,37 +99,7 @@ paths:
         "500": { $ref: "#/components/responses/InternalError" }
       security:
         - BearerAuth: []
-  
-  /cards/findByCategory:
-    get:
-      tags:
-        - cards
-      summary: Finds by category
-      description: Multiple status values can be provided with comma separated strings
-      operationId: findByCategory
-      parameters:
-        - name: categories
-          in: query
-          description: Status values that need to be considered for filter
-          required: true
-          explode: true
-          schema:
-            type: array
-            items:
-              type: string
-      responses:
-        "200":
-          description: successful operation
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Card"
-        "400": { $ref: "#/components/responses/BadRequest" }
-        "404": { $ref: "#/components/responses/NotFound" }
-        "500": { $ref: "#/components/responses/InternalError" }
-  
+
   /cards/{id}:
     get:
       tags:
@@ -259,49 +256,7 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "500": { $ref: "#/components/responses/InternalError" }
   
-  /categories:
-    get:
-      tags:
-        - categories
-      summary:  Returns an array of the categories
-      operationId: getAllCategories
-      responses:
-        "200":
-          description: A successful response.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status: 
-                    type: integer
-                    example: 200
-                  data:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/Category"
-        "400": { $ref: "#/components/responses/BadRequest" }
-        "404": { $ref: "#/components/responses/NotFound" }
-        "500": { $ref: "#/components/responses/InternalError" }
-      security:
-        - BearerAuth: []
-
-    post:
-      tags:
-        - categories
-      summary:  Endpoint adds the category
-      operationId: addCategory
-      requestBody:
-       { $ref: "#/components/requestBodies/Category"}
-      responses:
-        "200": { $ref: "#/components/responses/Success" }
-        "401": { $ref: "#/components/responses/Unauthorized" }
-        "409": { $ref: "#/components/responses/Conflict" }
-        "500": { $ref: "#/components/responses/InternalError" }
-      security:
-        - BearerAuth: []
   
-  /categories/{id}:
     put:
       tags:
         - categories
@@ -570,7 +525,6 @@ paths:
       security:
         - BearerAuth: []
 
-
 components:
   schemas:
     Document:
@@ -645,10 +599,6 @@ components:
       required:
         - text
       properties:
-        id:
-          type: string
-          format: uuid
-          uniqueItems: true
         text:
           type: string
           description: The main information about some problem
@@ -717,14 +667,12 @@ components:
           maxLength: 300
           example: I was hacked
         thumb:
-          $ref: "#/components/schemas/Image"
-        instructions:
+          type: string
+          example: static/uploads/some.jpg
+        desctiptions:
           type: array
           items:
             $ref: "#/components/schemas/Instruction"
-        isPublished:
-          type: boolean
-          default: false
     
     Image:
       type: object
