@@ -17,7 +17,9 @@ services:
           "down", "-all"
         ]
       networks:
-        - atackhelp-net
-
+        - ataka-help-backend_atackhelp-net
+        
 networks:
-  atackhelp-net:
+  ataka-help-backend_atackhelp-net:
+    external: true
+    name: ataka-help-backend_atackhelp-net
