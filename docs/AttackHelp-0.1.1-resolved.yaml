@@ -99,7 +99,6 @@ paths:
         "500": { $ref: "#/components/responses/InternalError" }
       security:
         - BearerAuth: []
-
   /cards/{id}:
     get:
       tags:
@@ -255,39 +254,7 @@ paths:
         "200": { $ref: "#/components/responses/Success" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "500": { $ref: "#/components/responses/InternalError" }
-  
-  
-    put:
-      tags:
-        - categories
-      summary:  Deletes the category
-      operationId: editeCategory
-      parameters:
-        - $ref: "#/components/parameters/id"
-      requestBody:
-       { $ref: "#/components/requestBodies/Category"}
-      responses:
-        "200": { $ref: "#/components/responses/Success" }
-        "401": { $ref: "#/components/responses/Unauthorized" }
-        "409": { $ref: "#/components/responses/Conflict" }
-        "500": { $ref: "#/components/responses/InternalError" }
-      security:
-        - BearerAuth: []
-    delete:
-      tags:
-        - categories
-      summary:  For the category editing
-      operationId: deleteCategory
-      parameters:
-        - $ref: "#/components/parameters/id"
-      responses:
-        "200": { $ref: "#/components/responses/Success" }
-        "401": { $ref: "#/components/responses/Unauthorized" }
-        "409": { $ref: "#/components/responses/Conflict" }
-        "500": { $ref: "#/components/responses/InternalError" }
-      security:
-        - BearerAuth: []
-  
+
   /feedback:
     post:
       tags:
@@ -471,7 +438,7 @@ paths:
       security:
         - BearerAuth: []
 
-  /contact/{id}:
+  /contact:
     get:
       tags:
         - contact
@@ -501,23 +468,6 @@ paths:
         $ref: "#/components/requestBodies/Contact"
       responses:
         "200": {$ref: "#/components/responses/Success"}
-        "400": { $ref: "#/components/responses/BadRequest" }
-        "401": { $ref: "#/components/responses/Unauthorized" }
-        "404": { $ref: "#/components/responses/NotFound" }
-        "500": { $ref: "#/components/responses/InternalError" }
-      security:
-        - BearerAuth: []
-
-  /contact:
-    post:
-      tags:
-        - contact
-      summary: Create contact by ID
-      operationId: createContactById
-      requestBody:
-        $ref: "#/components/requestBodies/Contact"
-      responses:
-        "201": {$ref: "#/components/responses/Created"}
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "404": { $ref: "#/components/responses/NotFound" }
@@ -603,24 +553,6 @@ components:
           type: string
           description: The main information about some problem
           format: text
-    
-    Category:
-      type: object
-      required:
-        - title
-        - icon
-      properties:
-        id:
-          type: string
-          format: uuid
-          uniqueItems: true
-        title:
-          type: string
-          example: Personal data
-          uniqueItems: true
-        icon:
-          type: string
-          example: /assets/service/image/png
     
     User:
       type: object
@@ -709,16 +641,17 @@ components:
     Contact:
       type: object
       required:
-        - phoneNumber
+        - phone1
+        - phone2
+        - email
       properties:
-        id:
+        phone1:
           type: string
-          format: uuid
-          uniqueItems: true
-        phoneNumber:
+        phone2:
           type: string
-          pattern: "^\\+380\\d{9}$"
-          uniqueItems: true
+        email:
+          type: string
+
           
   requestBodies:
     Report:
@@ -768,14 +701,6 @@ components:
           schema:
             $ref: "#/components/schemas/Card"
       description: Card object that needs to be added to the server
-    
-    Category:
-      required: true
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/Category"
-      description: Category object that needs to be added to the server
     
     UserArray:
       content:

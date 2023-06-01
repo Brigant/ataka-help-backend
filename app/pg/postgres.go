@@ -65,8 +65,16 @@ func (r Repo) UpdateContact(ctx context.Context, contact structs.Contact) error 
 	return nil
 }
 
-func (r Repo) SelectContact(context.Context) (structs.Contact, error) {
-	return structs.Contact{}, nil
+func (r Repo) SelectContact(ctx context.Context) (structs.Contact, error) {
+	query := `SELECT * FROM public.contact LIMIT 1`
+
+	contact := structs.Contact{}
+
+	if err := r.db.GetContext(ctx, &contact, query); err != nil {
+		return contact, fmt.Errorf("error while GetContext(): %w", err)
+	}
+
+	return contact, nil
 }
 
 func (r Repo) SelectAllCards(ctx context.Context, params structs.CardQueryParameters) ([]structs.Card, error) {

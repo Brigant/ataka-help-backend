@@ -28,8 +28,12 @@ func NewContactHandler(service ContactService, log *logger.Logger) ContactHandle
 func (h ContactHandler) Edit(ctx *fiber.Ctx) error {
 	contact := structs.Contact{}
 
-	if err := ctx.BodyParser(contact); err != nil {
+	if err := ctx.BodyParser(&contact); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	}
+
+	if contact.Email == "" || contact.Phone1 == "" || contact.Phone2 == "" {
+		return fiber.NewError(fiber.StatusBadRequest, "all contact fields are rewuired")
 	}
 
 	if err := h.Service.Modify(ctx.Context(), contact); err != nil {
@@ -39,7 +43,12 @@ func (h ContactHandler) Edit(ctx *fiber.Ctx) error {
 	return ctx.Status(fiber.StatusOK).JSON(structs.SetResponse(fiber.StatusOK, "success")) // nolint
 }
 
-// TODO: Implement Handler for returning contact
-func (c ContactHandler) Get(ctx *fiber.Ctx) error {
-	return nil
+
+func (h ContactHandler) Get(ctx *fiber.Ctx) error {
+	contact, err := h.Service.Obtain(ctx.Context())
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	}
+
+	return ctx.Status(fiber.StatusOK).JSON(contact)
 }
