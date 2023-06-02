@@ -43,11 +43,7 @@ func (s SliderService) SaveSlider(form *multipart.Form, ctx *fiber.Ctx) error {
 		Thumb: uniqueFilePath(file.Filename, uploadDirectory),
 	}
 
-	// if err := ctx.SaveFile(file, slider.Thumb); err != nil {
-	// 	return fmt.Errorf("error occured while file saving: %w", err)
-	// }
-
-	file2, err := file.Open()
+	fileOpened, err := file.Open()
 	if err != nil {
 		return fmt.Errorf("error happens while file.Open(): %w", err)
 	}
@@ -59,7 +55,7 @@ func (s SliderService) SaveSlider(form *multipart.Form, ctx *fiber.Ctx) error {
 
 	defer osFile.Close()
 
-	written, err := io.Copy(osFile, file2)
+	written, err := io.Copy(osFile, fileOpened)
 	if err != nil {
 		return fmt.Errorf(" written bytes: %v, error happens while io.Copy(): %w", written, err)
 	}

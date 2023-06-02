@@ -66,7 +66,6 @@ func (s Slider) createSlider(ctx *fiber.Ctx) error {
 		s.log.Debugw("createSlider", "file-name", file[0].Filename, "file-size", file[0].Size)
 	}
 	if file == nil || !isAllowedContentType(allowedContentType, file[0].Header["Content-Type"][0]) {
-		// if file == nil {
 		s.log.Debugw("createSlider", "form.File", err.Error())
 		ctx.JSON(structs.SetResponse(http.StatusInternalServerError, err.Error()))
 
