@@ -8,12 +8,11 @@ import (
 	"os"
 
 	"github.com/baza-trainee/ataka-help-backend/app/structs"
-	"github.com/gofiber/fiber/v2"
 )
 
 type SliderRepo interface {
 	SelectSlider() (string, error)
-	InsertSlider(structs.Slider, context.Context) error
+	InsertSlider(context.Context, structs.Slider) error
 }
 
 type SliderService struct {
@@ -29,7 +28,7 @@ func (s SliderService) ReturnSlider() (string, error) {
 	return result, nil
 }
 
-func (s SliderService) SaveSlider(form *multipart.Form, ctx *fiber.Ctx) error {
+func (s SliderService) SaveSlider(ctx context.Context, form *multipart.Form) error {
 
 	file := form.File["thumb"][0]
 
@@ -55,7 +54,7 @@ func (s SliderService) SaveSlider(form *multipart.Form, ctx *fiber.Ctx) error {
 		return fmt.Errorf(" written bytes: %v, error happens while io.Copy(): %w", written, err)
 	}
 
-	if err := s.Repo.InsertSlider(slider, ctx.Context()); err != nil {
+	if err := s.Repo.InsertSlider(ctx, slider); err != nil {
 		if err := os.Remove(slider.Thumb); err != nil {
 			return fmt.Errorf("error happens while remove file: %w", err)
 		}

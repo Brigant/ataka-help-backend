@@ -75,7 +75,6 @@ func (r Repo) SelectAllCards(ctx context.Context, params structs.CardQueryParame
 }
 
 func (r Repo) InsertCard(ctx context.Context, card structs.Card) error {
-	const expectedEffectedRow = 1
 
 	query := `INSERT INTO public.cards
 	(title, thumb, alt, description)
@@ -96,7 +95,7 @@ func (r Repo) InsertCard(ctx context.Context, card structs.Card) error {
 		return fmt.Errorf("the error is in RowsAffected: %w", err)
 	}
 
-	if effectedRows != expectedEffectedRow {
+	if effectedRows != expectedAffectedRow {
 		return structs.ErrDatabaseInserting
 	}
 
@@ -123,10 +122,10 @@ func (r Repo) SelectSlider() (string, error) {
 	return "array of slider images from db", nil
 }
 
-func (r Repo) InsertSlider(slider structs.Slider, ctx context.Context) error {
+func (r Repo) InsertSlider(ctx context.Context, slider structs.Slider) error {
 
-	query := `INSERT INTO public.slider (title, thumb, alt, description)
-			  VALUES(:title, :thumb);`
+	query := `INSERT INTO public.slider (title, thumb)
+			  VALUES($1, $2);`
 
 	result, err := r.db.ExecContext(ctx, query, slider.Title, slider.Thumb)
 	if err != nil {

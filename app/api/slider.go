@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"fmt"
 	"mime/multipart"
 	"net/http"
@@ -12,7 +13,7 @@ import (
 
 type SliderService interface {
 	ReturnSlider() (string, error)
-	SaveSlider(*multipart.Form, *fiber.Ctx) error
+	SaveSlider(context.Context, *multipart.Form) error
 }
 
 type Slider struct {
@@ -76,7 +77,7 @@ func (s Slider) createSlider(ctx *fiber.Ctx) error {
 		return fiber.NewError(http.StatusInternalServerError, "file too large")
 	}
 
-	if err := s.Service.SaveSlider(form, ctx); err != nil {
+	if err := s.Service.SaveSlider(ctx.Context(), form); err != nil {
 		ctx.JSON(structs.SetResponse(fiber.StatusInternalServerError, err.Error()))
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
