@@ -10,10 +10,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-var (
-	allowedContentType = []string{"image/jpg", "image/jpeg", "image/webp", "image/png"}
-)
-
 type SliderService interface {
 	ReturnSlider() (string, error)
 	SaveSlider(*multipart.Form, *fiber.Ctx) error
@@ -86,14 +82,4 @@ func (s Slider) createSlider(ctx *fiber.Ctx) error {
 	}
 
 	return ctx.JSON(structs.SetResponse(http.StatusOK, "success"))
-}
-
-func isAllowedContentType(allowedList []string, contentType string) bool {
-	for _, i := range allowedList {
-		if i == contentType {
-			return true
-		}
-	}
-
-	return false
 }

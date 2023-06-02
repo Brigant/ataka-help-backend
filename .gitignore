@@ -31,5 +31,6 @@ config.yaml
 # Coverage files
 coverage.*
 
-# Vendors
+# Directories
 vendor
+uploads

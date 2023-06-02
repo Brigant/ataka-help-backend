@@ -6,7 +6,7 @@ services:
       env_file:
         - .env
       image: postgres:15.3-alpine3.18
-      container_name: db
+      container_name: dbdocker
       environment:
         POSTGRES_USER: ${DB_USER}
         POSTGRES_PASSWORD: ${DB_PASSWORD}

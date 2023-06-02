@@ -6,6 +6,11 @@ import (
 	"github.com/google/uuid"
 )
 
+const (
+	uploadDirectory = "static/uploads/"
+	filePermition   = 0o666
+)
+
 type RepoInterface interface {
 	CardsRepo
 	PartnersRepo

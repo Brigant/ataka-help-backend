@@ -11,11 +11,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-const (
-	uploadDirectory = "static/uploads/"
-	filePermition   = 0o666
-)
-
 type SliderRepo interface {
 	SelectSlider() (string, error)
 	InsertSlider(structs.Slider, context.Context) error
