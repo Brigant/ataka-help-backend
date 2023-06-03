@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	uploadDirectory = "static/"
+	uploadDirectory = "static"
 	filePermition   = 0o666
 )
 
