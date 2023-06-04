@@ -6,6 +6,11 @@ import (
 	"github.com/google/uuid"
 )
 
+const (
+	uploadDirectory = "static/uploads/"
+	filePermition   = 0o666
+)
+
 type RepoInterface interface {
 	CardsRepo
 	PartnersRepo
@@ -14,12 +19,14 @@ type RepoInterface interface {
 type Services struct {
 	CardsService
 	PartnersService
+	ReportService
 }
 
 func NewService(repo RepoInterface) Services {
 	return Services{
 		CardsService{Repo: repo},
 		PartnersService{Repo: repo},
+		ReportService{},
 	}
 }
 

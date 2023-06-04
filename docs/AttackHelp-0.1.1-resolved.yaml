@@ -461,7 +461,20 @@ paths:
       summary:  It should recieve the report objects and changes the old one to the new one (replace with new) 
       operationId: editeReports
       requestBody:
-        $ref: "#/components/requestBodies/Report"
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - "report"
+              properties:
+                report:
+                  type: string
+                  format: binary
+            encoding:
+              report:
+                contentType: application/pdf
+
 
       responses:
         "200": { $ref: "#/components/responses/Success" }
