@@ -10,7 +10,7 @@ import (
 )
 
 type Server struct {
-	AppAddress      string        `env:"APP_PORT" envDefault:":7000"`
+	AppAddress      string        `env:"APP_PORT" envDefault:"7000"`
 	AppReadTimeout  time.Duration `env:"APP_READ_TIMEOUT" envDefault:"60s"`
 	AppWriteTimeout time.Duration `env:"APP_WRITE_TIMEOUT" envDefault:"60s"`
 	AppIdleTimeout  time.Duration `env:"APP_IDLE_TIMEOUT" envDefault:"60s"`
