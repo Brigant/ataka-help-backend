@@ -118,8 +118,17 @@ func (r Repo) SelectAllPartners() (string, error) {
 	return "some partners from db", nil
 }
 
-func (r Repo) SelectSlider() (string, error) {
-	return "array of slider images from db", nil
+func (r Repo) SelectSlider() ([]structs.Slider, error) {
+	response := []structs.Slider{}
+
+	query := `SELECT * FROM public.slider AS sld
+			  ORDER BY sld.created DESC;`
+
+	err := r.db.Select(&response, query)
+	if err != nil {
+		return nil, fmt.Errorf("error happens while slider returning: %w", err)
+	}
+	return response, nil
 }
 
 func (r Repo) InsertSlider(ctx context.Context, slider structs.Slider) error {

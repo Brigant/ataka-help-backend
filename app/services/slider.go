@@ -11,7 +11,7 @@ import (
 )
 
 type SliderRepo interface {
-	SelectSlider() (string, error)
+	SelectSlider() ([]structs.Slider, error)
 	InsertSlider(context.Context, structs.Slider) error
 }
 
@@ -19,13 +19,13 @@ type SliderService struct {
 	Repo SliderRepo
 }
 
-func (s SliderService) ReturnSlider() (string, error) {
-	result, err := s.Repo.SelectSlider()
+func (s SliderService) ReturnSlider() ([]structs.Slider, error) {
+	response, err := s.Repo.SelectSlider()
 	if err != nil {
-		return "", fmt.Errorf("error happens while selecting: %w", err)
+		return nil, fmt.Errorf("error happens while slider returning: %w", err)
 	}
 
-	return result, nil
+	return response, nil
 }
 
 func (s SliderService) SaveSlider(ctx context.Context, form *multipart.Form) error {

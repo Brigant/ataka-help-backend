@@ -10,3 +10,8 @@ type Slider struct {
 	Created  time.Time `json:"created" db:"created"`
 	Modified time.Time `json:"modified" db:"modified"`
 }
+
+type SliderResponse struct {
+	Code   int      `json:"code"`
+	Slider []Slider `json:"slider"`
+}

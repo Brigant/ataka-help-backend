@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"fmt"
 	"mime/multipart"
 	"net/http"
 
@@ -12,7 +11,7 @@ import (
 )
 
 type SliderService interface {
-	ReturnSlider() (string, error)
+	ReturnSlider() ([]structs.Slider, error)
 	SaveSlider(context.Context, *multipart.Form) error
 }
 
@@ -29,18 +28,18 @@ func NewSliderHandler(service SliderService, log *logger.Logger) Slider {
 }
 
 func (s Slider) getSlider(ctx *fiber.Ctx) error {
-	result, err := s.Service.ReturnSlider()
+	response, err := s.Service.ReturnSlider()
 	if err != nil {
-		return fmt.Errorf("cannot ReturnSlider: %w", err)
+		s.log.Errorw("getSlider", "getSLider error", err.Error())
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
-	s.log.Infow("TEST", "val", result)
-
-	if err = ctx.SendString(result); err != nil {
-		return fmt.Errorf("some err: %w", err)
+	result := structs.SliderResponse{
+		Code:   fiber.StatusOK,
+		Slider: response,
 	}
 
-	return nil
+	return ctx.JSON(result)
 }
 
 func (s Slider) createSlider(ctx *fiber.Ctx) error {
