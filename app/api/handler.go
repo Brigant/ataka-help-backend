@@ -5,7 +5,7 @@ import (
 )
 
 const (
-	fileLimit     = 5 * 1024 * 1024
+	fileLimit     = 2 * 1024 * 1024
 	defaultLimit  = 6
 	defaultOffset = 0
 )

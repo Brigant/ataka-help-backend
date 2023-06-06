@@ -12,7 +12,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/recover"
 )
 
-const bodyLimit = 50 * 1024 * 1024
+const bodyLimit = 2 * 1024 * 1024
 
 type Server struct {
 	HTTPServer *fiber.App
