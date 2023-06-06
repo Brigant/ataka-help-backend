@@ -22,7 +22,7 @@ type SliderService struct {
 func (s SliderService) ReturnSlider() ([]structs.Slider, error) {
 	response, err := s.Repo.SelectSlider()
 	if err != nil {
-		return nil, fmt.Errorf("error happens while slider returning: %w", err)
+		return []structs.Slider{}, fmt.Errorf("error happens while slider returning: %w", err)
 	}
 
 	return response, nil

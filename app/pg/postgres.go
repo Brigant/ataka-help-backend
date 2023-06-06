@@ -126,7 +126,7 @@ func (r Repo) SelectSlider() ([]structs.Slider, error) {
 
 	err := r.db.Select(&response, query)
 	if err != nil {
-		return nil, fmt.Errorf("error happens while slider returning: %w", err)
+		return []structs.Slider{}, fmt.Errorf("error happens while slider returning: %w", err)
 	}
 	return response, nil
 }
