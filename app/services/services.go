@@ -9,17 +9,20 @@ import (
 type RepoInterface interface {
 	CardsRepo
 	PartnersRepo
+	ContactRepo
 }
 
 type Services struct {
 	CardsService
 	PartnersService
+	ContactService
 }
 
 func NewService(repo RepoInterface) Services {
 	return Services{
 		CardsService{Repo: repo},
 		PartnersService{Repo: repo},
+		ContactService{Repo: repo},
 	}
 }
 

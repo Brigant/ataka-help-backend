@@ -31,6 +31,9 @@ config.yaml
 # Coverage files
 coverage.*
 
+# Uploads files
+*/uploads/*.* 
+!.gitkeep
+
 # Directories
 vendor
-uploads

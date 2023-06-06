@@ -37,6 +37,46 @@ func (r Repo) Close() error {
 	return fmt.Errorf("error hapens while db.close: %w", r.db.Close())
 }
 
+func (r Repo) UpdateContact(ctx context.Context, contact structs.Contact) error {
+	const expectedEffectedRow = 1
+
+	query := `UPDATE public.contact
+		SET phone1=:phone1, phone2=:phone2, email=:email;
+		`
+	result, err := r.db.NamedExecContext(ctx, query, contact)
+	if err != nil {
+		pqError := new(pq.Error)
+		if errors.As(err, &pqError) && pqError.Code.Name() == ErrCodeUniqueViolation {
+			return structs.ErrUniqueRestriction
+		}
+
+		return fmt.Errorf("error in NamedEx: %w", err)
+	}
+
+	effectedRows, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("the error is in RowsAffected: %w", err)
+	}
+
+	if effectedRows != expectedEffectedRow {
+		return structs.ErrDatabaseInserting
+	}
+
+	return nil
+}
+
+func (r Repo) SelectContact(ctx context.Context) (structs.Contact, error) {
+	query := `SELECT * FROM public.contact LIMIT 1`
+
+	contact := structs.Contact{}
+
+	if err := r.db.GetContext(ctx, &contact, query); err != nil {
+		return contact, fmt.Errorf("error while GetContext(): %w", err)
+	}
+
+	return contact, nil
+}
+
 func (r Repo) SelectAllCards(ctx context.Context, params structs.CardQueryParameters) ([]structs.Card, error) {
 	query := `
 		SELECT id, title, thumb, alt, description, created, modified
