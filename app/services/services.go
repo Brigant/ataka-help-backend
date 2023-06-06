@@ -14,12 +14,14 @@ const (
 type RepoInterface interface {
 	CardsRepo
 	PartnersRepo
+	ContactRepo
 }
 
 type Services struct {
 	CardsService
 	PartnersService
 	ReportService
+	ContactService
 }
 
 func NewService(repo RepoInterface) Services {
@@ -27,6 +29,7 @@ func NewService(repo RepoInterface) Services {
 		CardsService{Repo: repo},
 		PartnersService{Repo: repo},
 		ReportService{},
+		ContactService{Repo: repo},
 	}
 }
 
