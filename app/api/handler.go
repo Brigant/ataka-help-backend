@@ -39,6 +39,7 @@ func isAllowedContentType(allowedList []string, contentType string) bool {
 		if i == contentType {
 			return true
 		}
-
+	}
+	
 	return false
 }
