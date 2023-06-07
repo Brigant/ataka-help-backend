@@ -10,8 +10,6 @@ import (
 	"github.com/baza-trainee/ataka-help-backend/app/structs"
 )
 
-
-
 type CardsRepo interface {
 	SelectAllCards(context.Context, structs.CardQueryParameters) ([]structs.Card, error)
 	InsertCard(context.Context, structs.Card) error
