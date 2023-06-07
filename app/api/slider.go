@@ -39,7 +39,7 @@ func (s Slider) getSlider(ctx *fiber.Ctx) error {
 		Slider: response,
 	}
 
-	return ctx.JSON(result)
+	return ctx.Status(fiber.StatusOK).JSON(result)
 }
 
 func (s Slider) createSlider(ctx *fiber.Ctx) error {
