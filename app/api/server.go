@@ -63,8 +63,8 @@ func (s *Server) Shutdown(ctx context.Context) error {
 
 func (s Server) initRoutes(app *fiber.App, h Handler) {
 	app.Static("/static", "./static")
-	
-  app.Get("/cards", h.Card.getCards)
+
+	app.Get("/cards", h.Card.getCards)
 	app.Post("/cards", h.Card.createCard)
 
 	app.Put("/contact", h.Contact.Edit)
@@ -74,6 +74,8 @@ func (s Server) initRoutes(app *fiber.App, h Handler) {
 
 	app.Get("/reports", h.Report.getReports)
 	app.Put("/reports", h.Report.updateReport)
+
+	app.Post("/feedback", h.Feedback.sendFedback)
 }
 
 func corsConfig() cors.Config {

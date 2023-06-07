@@ -15,22 +15,24 @@ type ServiceInterfaces interface {
 	PartnerService
 	ReportService
 	ContactService
-
+	FeedbackService
 }
 
 type Handler struct {
-	Card    CardHandler 
-	Partner Partner
-	Report  ReportHandler
-	Contact ContactHandler
+	Card     CardHandler
+	Partner  Partner
+	Report   ReportHandler
+	Contact  ContactHandler
+	Feedback FeedbackHandler
 }
 
 func NewHandler(services ServiceInterfaces, log *logger.Logger) Handler {
 	return Handler{
-		Card:    NewCardsHandler(services, log),
-		Partner: NewParnerHandler(services, log),
-		Report:  NewReportHandler(services, log),
-    Contact: NewContactHandler(services, log),
+		Card:     NewCardsHandler(services, log),
+		Partner:  NewParnerHandler(services, log),
+		Report:   NewReportHandler(services, log),
+		Contact:  NewContactHandler(services, log),
+		Feedback: NewFeedbackHandler(services, log),
 	}
 }
 
@@ -40,6 +42,6 @@ func isAllowedContentType(allowedList []string, contentType string) bool {
 			return true
 		}
 	}
-	
+
 	return false
 }
