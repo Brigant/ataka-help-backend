@@ -11,18 +11,18 @@ import (
 )
 
 type SliderRepo interface {
-	SelectSlider() ([]structs.Slider, error)
-	InsertSlider(context.Context, structs.Slider) error
+	SelectSlider() ([]structs.Slide, error)
+	InsertSlider(context.Context, structs.Slide) error
 }
 
 type SliderService struct {
 	Repo SliderRepo
 }
 
-func (s SliderService) ReturnSlider() ([]structs.Slider, error) {
+func (s SliderService) ReturnSlider() ([]structs.Slide, error) {
 	response, err := s.Repo.SelectSlider()
 	if err != nil {
-		return []structs.Slider{}, fmt.Errorf("error happens while slider returning: %w", err)
+		return []structs.Slide{}, fmt.Errorf("error happens while slider returning: %w", err)
 	}
 
 	return response, nil
@@ -32,7 +32,7 @@ func (s SliderService) SaveSlider(ctx context.Context, form *multipart.Form) err
 
 	file := form.File["thumb"][0]
 
-	slider := structs.Slider{
+	slider := structs.Slide{
 		Title: form.Value["title"][0],
 		Thumb: uniqueFilePath(file.Filename, uploadDirectory),
 	}

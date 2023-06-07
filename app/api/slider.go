@@ -11,7 +11,7 @@ import (
 )
 
 type SliderService interface {
-	ReturnSlider() ([]structs.Slider, error)
+	ReturnSlider() ([]structs.Slide, error)
 	SaveSlider(context.Context, *multipart.Form) error
 }
 
@@ -52,7 +52,6 @@ func (s Slider) createSlider(ctx *fiber.Ctx) error {
 	title := form.Value["title"]
 	if title == nil || len(title[0]) < 4 || len(title[0]) > 300 {
 		s.log.Debugw("createSlider", "form.Value title", "title is blank or out of range limits")
-		ctx.JSON(structs.SetResponse(http.StatusBadRequest, "title is blank or out of range limits"))
 
 		return fiber.NewError(fiber.StatusBadRequest, "title is blank or out of range limits")
 	}
@@ -63,7 +62,6 @@ func (s Slider) createSlider(ctx *fiber.Ctx) error {
 	}
 	if file == nil || !isAllowedContentType(allowedContentType, file[0].Header["Content-Type"][0]) {
 		s.log.Debugw("createSlider", "form.File", err.Error())
-		ctx.JSON(structs.SetResponse(http.StatusInternalServerError, err.Error()))
 
 		return fiber.NewError(http.StatusInternalServerError, err.Error())
 	}
@@ -71,13 +69,12 @@ func (s Slider) createSlider(ctx *fiber.Ctx) error {
 	size := file[0].Size
 	if size > 5*1024*1024 {
 		s.log.Debugw("createSlider", "form.File", "file too large")
-		ctx.JSON(structs.SetResponse(http.StatusInternalServerError, "file too large"))
 
 		return fiber.NewError(http.StatusInternalServerError, "file too large")
 	}
 
 	if err := s.Service.SaveSlider(ctx.Context(), form); err != nil {
-		ctx.JSON(structs.SetResponse(fiber.StatusInternalServerError, err.Error()))
+		s.log.Errorw("createSlider", "createSlider error", err.Error())
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 

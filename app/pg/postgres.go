@@ -118,20 +118,22 @@ func (r Repo) SelectAllPartners() (string, error) {
 	return "some partners from db", nil
 }
 
-func (r Repo) SelectSlider() ([]structs.Slider, error) {
-	response := []structs.Slider{}
+func (r Repo) SelectSlider() ([]structs.Slide, error) {
+	response := []structs.Slide{}
 
-	query := `SELECT * FROM public.slider AS sld
+	query := `SELECT title, thumb, created, modified 
+			  FROM public.slider AS sld
 			  ORDER BY sld.created DESC;`
 
 	err := r.db.Select(&response, query)
 	if err != nil {
-		return []structs.Slider{}, fmt.Errorf("error happens while slider returning: %w", err)
+		return []structs.Slide{}, fmt.Errorf("error happens while slider returning: %w", err)
 	}
+
 	return response, nil
 }
 
-func (r Repo) InsertSlider(ctx context.Context, slider structs.Slider) error {
+func (r Repo) InsertSlider(ctx context.Context, slider structs.Slide) error {
 
 	query := `INSERT INTO public.slider (title, thumb)
 			  VALUES($1, $2);`

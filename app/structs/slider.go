@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-type Slider struct {
+type Slide struct {
 	Title    string    `json:"title" db:"title"`
 	Thumb    string    `json:"thumb" db:"thumb"`
 	Created  time.Time `json:"created" db:"created"`
@@ -12,6 +12,6 @@ type Slider struct {
 }
 
 type SliderResponse struct {
-	Code   int      `json:"code"`
-	Slider []Slider `json:"slider"`
+	Code   int     `json:"code"`
+	Slider []Slide `json:"slider"`
 }
