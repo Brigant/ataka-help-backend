@@ -12,6 +12,7 @@ import (
 )
 
 const (
+	expectedAffectedRow        = 1
 	ErrCodeUniqueViolation     = "unique_violation"
 	ErrCodeNoData              = "no_data"
 	ErrCodeForeignKeyViolation = "foreign_key_violation"
@@ -19,7 +20,7 @@ const (
 )
 
 type Repo struct {
-	db sqlx.DB
+	db *sqlx.DB
 }
 
 // Returns an object of the Ropository.
@@ -30,7 +31,7 @@ func NewRepository(cfg config.Config) (Repo, error) {
 		return Repo{}, fmt.Errorf("cannot connect to db: %w", err)
 	}
 
-	return Repo{db: *database}, nil
+	return Repo{db: database}, nil
 }
 
 func (r Repo) Close() error {
@@ -114,7 +115,6 @@ func (r Repo) SelectAllCards(ctx context.Context, params structs.CardQueryParame
 }
 
 func (r Repo) InsertCard(ctx context.Context, card structs.Card) error {
-	const expectedEffectedRow = 1
 
 	query := `INSERT INTO public.cards
 	(title, thumb, alt, description)
@@ -135,7 +135,7 @@ func (r Repo) InsertCard(ctx context.Context, card structs.Card) error {
 		return fmt.Errorf("the error is in RowsAffected: %w", err)
 	}
 
-	if effectedRows != expectedEffectedRow {
+	if effectedRows != expectedAffectedRow {
 		return structs.ErrDatabaseInserting
 	}
 
@@ -156,4 +156,49 @@ func (r Repo) CountRowsTable(ctx context.Context, table string) (int, error) {
 
 func (r Repo) SelectAllPartners() (string, error) {
 	return "some partners from db", nil
+}
+
+func (r Repo) SelectSlider() ([]structs.Slide, error) {
+	response := []structs.Slide{}
+
+	query := `SELECT title, thumb, created, modified 
+			  FROM public.slider AS sld
+			  ORDER BY sld.created DESC;`
+
+	err := r.db.Select(&response, query)
+	if err != nil {
+		return []structs.Slide{}, fmt.Errorf("error happens while slider returning: %w", err)
+	}
+
+	return response, nil
+}
+
+func (r Repo) InsertSlider(ctx context.Context, slider structs.Slide) error {
+	query := `INSERT INTO public.slider (title, thumb)
+			  VALUES($1, $2);`
+
+	result, err := r.db.ExecContext(ctx, query, slider.Title, slider.Thumb)
+	if err != nil {
+		pqError := new(pq.Error)
+		if errors.As(err, &pqError) && pqError.Code.Name() == ErrCodeForeignKeyViolation {
+			return structs.ErrForeignViolation
+		}
+
+		if errors.As(err, &pqError) && pqError.Code.Name() == ErrCodeUniqueViolation {
+			return structs.ErrUniqueRestriction
+		}
+
+		return fmt.Errorf("error in ExecContext: %w", err)
+	}
+
+	effectedRows, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("the error is in RowsAffected: %w", err)
+	}
+
+	if effectedRows != expectedAffectedRow {
+		return structs.ErrDatabaseInserting
+	}
+
+	return nil
 }

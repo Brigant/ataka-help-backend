@@ -12,7 +12,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/recover"
 )
 
-const bodyLimit = 50 * 1024 * 1024
+const bodyLimit = 2 * 1024 * 1024
 
 type Server struct {
 	HTTPServer *fiber.App
@@ -20,7 +20,7 @@ type Server struct {
 
 func NewServer(cfg config.Config, handler Handler) *Server {
 	server := new(Server)
-	//   ("./view", ".html")
+
 	fconfig := fiber.Config{
 		ReadTimeout:  cfg.Server.AppReadTimeout,
 		WriteTimeout: cfg.Server.AppWriteTimeout,
@@ -67,10 +67,18 @@ func (s Server) initRoutes(app *fiber.App, h Handler) {
 	app.Get("/cards", h.Card.getCards)
 	app.Post("/cards", h.Card.createCard)
 
-	app.Put("/contacts", h.Contact.Edit)
-	app.Get("/contacts", h.Contact.Get)
+	app.Get("/partners", h.Partner.get)
 
-	app.Get("/partners", h.Partner.Get)
+	app.Get("/slider", h.Slider.getSlider)
+	app.Post("/slider", h.Slider.createSlider)
+
+	app.Put("/contacts", h.Contact.edit)
+	app.Get("/contacts", h.Contact.get)
+
+	app.Get("/reports", h.Report.getReports)
+	app.Put("/reports", h.Report.updateReport)
+
+	app.Post("/feedback", h.Feedback.sendFedback)
 }
 
 func corsConfig() cors.Config {

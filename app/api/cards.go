@@ -10,14 +10,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-const (
-	fileLimit     = 5 * 1024 * 1024
-	defaultLimit  = 6
-	defaultOffset = 0
-)
-
-var allowedContentType = []string{"image/jpg", "image/jpeg", "image/webp", "image/png"}
-
 type CardService interface {
 	ReturnCards(context.Context, structs.CardQueryParameters) ([]structs.Card, int, error)
 	SaveCard(context.Context, *multipart.Form) error
@@ -61,9 +53,17 @@ func (h CardHandler) getCards(ctx *fiber.Ctx) error {
 
 // nolint: cyclop
 func (h CardHandler) createCard(ctx *fiber.Ctx) error {
+	allowedContentType := []string{"image/jpg", "image/jpeg", "image/webp", "image/png"}
+
 	form, err := ctx.MultipartForm()
 	if err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	}
+
+	if len(form.File["thumb"]) < 1 {
+		h.log.Debugw("createCard", "form.File", "no thumb was attached")
+
+		return fiber.NewError(fiber.StatusBadRequest, "no thumb was attached")
 	}
 
 	fileHeader := form.File["thumb"][0]
@@ -98,14 +98,4 @@ func (h CardHandler) createCard(ctx *fiber.Ctx) error {
 	}
 
 	return ctx.Status(fiber.StatusCreated).JSON(structs.SetResponse(fiber.StatusCreated, "success")) // nolint
-}
-
-func isAllowedContentType(allowedList []string, contentType string) bool {
-	for _, i := range allowedList {
-		if i == contentType {
-			return true
-		}
-	}
-
-	return false
 }

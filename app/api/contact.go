@@ -25,7 +25,7 @@ func NewContactHandler(service ContactService, log *logger.Logger) ContactHandle
 	}
 }
 
-func (h ContactHandler) Edit(ctx *fiber.Ctx) error {
+func (h ContactHandler) edit(ctx *fiber.Ctx) error {
 	contact := structs.Contact{}
 
 	if err := ctx.BodyParser(&contact); err != nil {
@@ -44,7 +44,7 @@ func (h ContactHandler) Edit(ctx *fiber.Ctx) error {
 }
 
 
-func (h ContactHandler) Get(ctx *fiber.Ctx) error {
+func (h ContactHandler) get(ctx *fiber.Ctx) error {
 	contact, err := h.Service.Obtain(ctx.Context())
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
