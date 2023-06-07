@@ -20,7 +20,7 @@ var (
 	errWrongName    = errors.New("wrong name")
 	errWrongEmail   = errors.New("wrong email")
 	errWrongComment = errors.New("wrong comment")
-	errToken        = errors.New("empty toker")
+	errToken        = errors.New("empty token")
 )
 
 type Feedback struct {
