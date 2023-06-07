@@ -23,13 +23,11 @@ func NewParnerHandler(service PartnerService, log *logger.Logger) Partner {
 	}
 }
 
-func (h Partner) Get(ctx *fiber.Ctx) error {
+func (h Partner) get(ctx *fiber.Ctx) error {
 	str, err := h.Service.ReturnPartners()
 	if err != nil {
 		return fmt.Errorf("some err: %w", err)
 	}
-
-	h.log.Infow("TEST", "val", str)
 
 	if err := ctx.SendString(str); err != nil {
 		return fmt.Errorf("some err: %w", err)

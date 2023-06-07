@@ -20,7 +20,7 @@ type Server struct {
 
 func NewServer(cfg config.Config, handler Handler) *Server {
 	server := new(Server)
-	//   ("./view", ".html")
+
 	fconfig := fiber.Config{
 		ReadTimeout:  cfg.Server.AppReadTimeout,
 		WriteTimeout: cfg.Server.AppWriteTimeout,
@@ -67,15 +67,22 @@ func (s Server) initRoutes(app *fiber.App, h Handler) {
 	app.Get("/cards", h.Card.getCards)
 	app.Post("/cards", h.Card.createCard)
 
-	app.Get("/partners", h.Partner.Get)
+	app.Get("/partners", h.Partner.get)
 
 	app.Get("/slider", h.Slider.getSlider)
 	app.Post("/slider", h.Slider.createSlider)
+
+	app.Put("/contacts", h.Contact.Edit)
+	app.Get("/contacts", h.Contact.Get)
+
+	app.Get("/reports", h.Report.getReports)
+	app.Put("/reports", h.Report.updateReport)
 }
 
 func corsConfig() cors.Config {
 	return cors.Config{
-		AllowOrigins: `https://ataka-help.vercel.app`,
+		// AllowOrigins: `https://ataka-help.vercel.app, http://localhost,  http://localhost:7000`,
+		AllowOrigins: "*",
 		AllowHeaders: "Origin, Content-Type, Accept",
 		AllowMethods: "GET, POST, PUT, DELETE",
 	}

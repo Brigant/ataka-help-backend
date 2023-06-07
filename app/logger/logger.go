@@ -42,7 +42,7 @@ func New(logLevel string) (*Logger, error) {
 
 	logger, err := cfg.Build()
 	if err != nil {
-		return nil, fmt.Errorf("сan't build: %w", err)
+		return nil, fmt.Errorf("can't build: %w", err)
 	}
 
 	return &Logger{logger.Sugar()}, nil
