@@ -6,7 +6,9 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-type FeedbackService interface{}
+type FeedbackService interface{
+	PassFeedback(structs.Feedback) error
+}
 
 type FeedbackHandler struct {
 	Service FeedbackService

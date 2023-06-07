@@ -67,8 +67,8 @@ func (s Server) initRoutes(app *fiber.App, h Handler) {
 	app.Get("/cards", h.Card.getCards)
 	app.Post("/cards", h.Card.createCard)
 
-	app.Put("/contact", h.Contact.Edit)
-	app.Get("/contact", h.Contact.Get)
+	app.Put("/contact", h.Contact.edit)
+	app.Get("/contact", h.Contact.get)
 
 	app.Get("/partners", h.Partner.Get)
 

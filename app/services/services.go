@@ -22,6 +22,7 @@ type Services struct {
 	PartnersService
 	ReportService
 	ContactService
+	FeedbackService
 }
 
 func NewService(repo RepoInterface) Services {
@@ -30,6 +31,7 @@ func NewService(repo RepoInterface) Services {
 		PartnersService{Repo: repo},
 		ReportService{},
 		ContactService{Repo: repo},
+		FeedbackService{},
 	}
 }
 

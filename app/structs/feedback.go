@@ -20,6 +20,7 @@ var (
 	errWrongName    = errors.New("wrong name")
 	errWrongEmail   = errors.New("wrong email")
 	errWrongComment = errors.New("wrong comment")
+	errToken        = errors.New("empty toker")
 )
 
 type Feedback struct {
@@ -40,6 +41,10 @@ func (f Feedback) Valiadate() error {
 
 	if !commnentRegex.MatchString(f.Comment) {
 		return errWrongComment
+	}
+
+	if len(f.Token) < 1 {
+		return errToken
 	}
 
 	return nil
