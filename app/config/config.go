@@ -25,9 +25,17 @@ type Postgres struct {
 	SSLmode  string `env:"DB_SSL_MODE" envDefault:"disable"`
 }
 
+type Smtp struct {
+	MailAccount       string `env:"SMTP_ACCOUNT"`
+	AccountPassword   string `env:"SMTP_PASSWORD"`
+	SmtpServerAddress string `env:"SMTP_ADDRESS"`
+	CaptchaKey        string `env:"CAPTCHA_KEY"`
+}
+
 type Config struct {
 	Server          Server
 	DB              Postgres
+	Smtp            Smtp
 	LogLevel        string        `env:"LOG_LEVEL" envDefault:"INFO"`
 	Salt            string        `env:"APP_SALT,notEmpty"`
 	SigningKey      string        `env:"SIGNING_KEY,notEmpty"`
@@ -57,6 +65,7 @@ func InitConfig() (Config, error) {
 
 	cfg.Server.AppAddress = ":" + cfg.Server.AppAddress
 
+	fmt.Println(cfg)
 	return cfg, nil
 }
 
