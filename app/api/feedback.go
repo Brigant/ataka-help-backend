@@ -32,7 +32,9 @@ func (h FeedbackHandler) sendFedback(ctx *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 
-	h.Service.PassFeedback(feedback)
+	if err := h.Service.PassFeedback(feedback); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	}
 
 	return ctx.Status(fiber.StatusOK).JSON(feedback)
 }

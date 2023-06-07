@@ -3,6 +3,7 @@ package services
 import (
 	"strings"
 
+	"github.com/baza-trainee/ataka-help-backend/app/config"
 	"github.com/google/uuid"
 )
 
@@ -27,14 +28,14 @@ type Services struct {
 	FeedbackService
 }
 
-func NewService(repo RepoInterface) Services {
+func NewService(repo RepoInterface, cfg config.Smtp) Services {
 	return Services{
 		CardsService{Repo: repo},
 		PartnersService{Repo: repo},
 		SliderService{Repo: repo},
 		ReportService{},
 		ContactService{Repo: repo},
-		FeedbackService{},
+		FeedbackService{cfg: cfg},
 	}
 }
 

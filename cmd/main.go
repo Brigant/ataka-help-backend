@@ -35,7 +35,7 @@ func main() {
 		logger.Errorw("New Repository", "error", err.Error())
 	}
 
-	service := services.NewService(repo)
+	service := services.NewService(repo, cfg.Smtp)
 
 	handler := api.NewHandler(service, logger)
 
