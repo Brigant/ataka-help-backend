@@ -10,8 +10,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-
-
 type CardService interface {
 	ReturnCards(context.Context, structs.CardQueryParameters) ([]structs.Card, int, error)
 	SaveCard(context.Context, *multipart.Form) error
