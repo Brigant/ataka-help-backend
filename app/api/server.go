@@ -78,7 +78,7 @@ func (s Server) initRoutes(app *fiber.App, h Handler) {
 	app.Get("/reports", h.Report.getReports)
 	app.Put("/reports", h.Report.updateReport)
 
-	app.Post("/feedback", h.Feedback.sendFedback)
+	app.Post("/feedbacks", h.Feedback.sendFedback)
 }
 
 func corsConfig() cors.Config {
