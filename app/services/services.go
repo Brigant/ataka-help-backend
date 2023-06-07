@@ -28,7 +28,7 @@ type Services struct {
 	FeedbackService
 }
 
-func NewService(repo RepoInterface, cfg config.Smtp) Services {
+func NewService(repo RepoInterface, cfg config.SMTP) Services {
 	return Services{
 		CardsService{Repo: repo},
 		PartnersService{Repo: repo},

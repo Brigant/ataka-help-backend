@@ -29,7 +29,6 @@ func (s SliderService) ReturnSlider() ([]structs.Slide, error) {
 }
 
 func (s SliderService) SaveSlider(ctx context.Context, form *multipart.Form) error {
-
 	file := form.File["thumb"][0]
 
 	slider := structs.Slide{
