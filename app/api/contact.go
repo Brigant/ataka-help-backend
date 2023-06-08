@@ -43,7 +43,6 @@ func (h ContactHandler) edit(ctx *fiber.Ctx) error {
 	return ctx.Status(fiber.StatusOK).JSON(structs.SetResponse(fiber.StatusOK, "success")) // nolint
 }
 
-
 func (h ContactHandler) get(ctx *fiber.Ctx) error {
 	contact, err := h.Service.Obtain(ctx.Context())
 	if err != nil {

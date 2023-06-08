@@ -1,13 +1,15 @@
 package api
 
 import (
+	"context"
+
 	"github.com/baza-trainee/ataka-help-backend/app/logger"
 	"github.com/baza-trainee/ataka-help-backend/app/structs"
 	"github.com/gofiber/fiber/v2"
 )
 
-type FeedbackService interface{
-	PassFeedback(structs.Feedback) error
+type FeedbackService interface {
+	PassFeedback(context.Context, structs.Feedback) error
 }
 
 type FeedbackHandler struct {
@@ -32,7 +34,7 @@ func (h FeedbackHandler) sendFedback(ctx *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 
-	if err := h.Service.PassFeedback(feedback); err != nil {
+	if err := h.Service.PassFeedback(ctx.Context(), feedback); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 

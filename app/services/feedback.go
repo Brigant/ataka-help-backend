@@ -2,6 +2,7 @@ package services
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -14,11 +15,11 @@ import (
 )
 
 type FeedbackService struct {
-	cfg config.Smtp
+	cfg config.SMTP
 }
 
-func (f FeedbackService) PassFeedback(feedback structs.Feedback) error {
-	ok, err := f.checkGoogleCaptcha(feedback.Token, f.cfg.CaptchaKey)
+func (f FeedbackService) PassFeedback(ctx context.Context, feedback structs.Feedback) error {
+	ok, err := f.checkGoogleCaptcha(ctx, feedback.Token, f.cfg.CaptchaKey)
 	if err != nil {
 		return fmt.Errorf("error in checkGoogleCaptcha(): %w", err)
 	}
@@ -27,15 +28,18 @@ func (f FeedbackService) PassFeedback(feedback structs.Feedback) error {
 		return structs.ErrCheckCaptcha
 	}
 
-	if err := f.sendMail(feedback, f.cfg.MailAccount, f.cfg.AccountPassword, f.cfg.SmtpServerAddress); err != nil {
+	if err := f.sendMail(feedback, f.cfg.MailAccount, f.cfg.AccountPassword, f.cfg.SMTPServerAddress); err != nil {
 		return fmt.Errorf("error in sendMail(): %w", err)
 	}
 
 	return nil
 }
 
-func (f FeedbackService) checkGoogleCaptcha(token, googleCaptcha string) (bool, error) {
-	req, _ := http.NewRequest("POST", "https://www.google.com/recaptcha/api/siteverify", nil)
+func (f FeedbackService) checkGoogleCaptcha(ctx context.Context, token, googleCaptcha string) (bool, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "https://www.google.com/recaptcha/api/siteverify", nil)
+	if err != nil {
+		return false, fmt.Errorf("error in http.NewRequest(): %w", err)
+	}
 
 	pathQuery := req.URL.Query()
 	pathQuery.Add("secret", googleCaptcha)
@@ -63,7 +67,12 @@ func (f FeedbackService) checkGoogleCaptcha(token, googleCaptcha string) (bool, 
 		return false, fmt.Errorf("error in json.Unmarshal(): %w", err)
 	}
 
-	return googleResponse["success"].(bool), nil
+	isValid, ok := googleResponse["success"].(bool)
+	if !ok {
+		return false, fmt.Errorf("error in the assertion: %w", err)
+	}
+
+	return isValid, nil
 }
 
 func (f FeedbackService) sendMail(feedback structs.Feedback, mailAccount, mailPassword, smtpServer string) error {
@@ -74,7 +83,9 @@ func (f FeedbackService) sendMail(feedback structs.Feedback, mailAccount, mailPa
 		return fmt.Errorf("error in template.ParseFiles(): %w", err)
 	}
 
-	templateFile.Execute(&body, feedback)
+	if err := templateFile.Execute(&body, feedback); err != nil {
+		return fmt.Errorf("error in templateFile.Execute(): %w", err)
+	}
 
 	auth := smtp.PlainAuth(
 		"",
