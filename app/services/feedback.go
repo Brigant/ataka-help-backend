@@ -110,8 +110,8 @@ func (f FeedbackService) sendMail(feedback structs.Feedback, mailAccount, mailPa
 	err = smtp.SendMail(
 		smtpServer+":587",
 		auth,
-		"sergey.july@nis.ua",
-		[]string{"sergey.july@nis.ua"},
+		mailAccount,
+		[]string{mailAccount},
 		[]byte(msg),
 	)
 
