@@ -43,5 +43,5 @@ func (h FeedbackHandler) sendFedback(ctx *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 
-	return ctx.Status(fiber.StatusOK).JSON(structs.Response{fiber.StatusOK, "success"})
+	return ctx.Status(fiber.StatusOK).JSON(structs.SetResponse(fiber.StatusOK, "success"))
 }
