@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"errors"
 
 	"github.com/baza-trainee/ataka-help-backend/app/logger"
 	"github.com/baza-trainee/ataka-help-backend/app/structs"
@@ -35,8 +36,12 @@ func (h FeedbackHandler) sendFedback(ctx *fiber.Ctx) error {
 	}
 
 	if err := h.Service.PassFeedback(ctx.Context(), feedback); err != nil {
+		if errors.Is(err, structs.ErrCheckCaptcha) {
+			return fiber.NewError(fiber.StatusForbidden, err.Error())
+		}
+
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 
-	return ctx.Status(fiber.StatusOK).JSON(feedback)
+	return ctx.Status(fiber.StatusOK).JSON(structs.ReportResponse{fiber.StatusOK, "success"})
 }
