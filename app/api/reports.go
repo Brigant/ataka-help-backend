@@ -94,5 +94,5 @@ func (h ReportHandler) deleteReport(ctx *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
-	return ctx.Status(fiber.StatusCreated).JSON(structs.SetResponse(fiber.StatusCreated, "success")) // nolint
+	return ctx.Status(fiber.StatusCreated).JSON(structs.SetResponse(fiber.StatusOK, "success")) // nolint
 }
