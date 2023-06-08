@@ -1,6 +1,9 @@
 package api
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/baza-trainee/ataka-help-backend/app/logger"
 )
 
@@ -44,6 +47,20 @@ func NewHandler(services ServiceInterfaces, log *logger.Logger) Handler {
 func isAllowedContentType(allowedList []string, contentType string) bool {
 	for _, i := range allowedList {
 		if i == contentType {
+			return true
+		}
+	}
+
+	return false
+}
+
+func isAllowedFileExtention(allowedList []string, fileName string) bool {
+	nameParts := strings.Split(fileName, ".")
+
+	fileExt := nameParts[len(nameParts)-1]
+	fmt.Println(fileExt)
+	for _, i := range allowedList {
+		if i == fileExt {
 			return true
 		}
 	}

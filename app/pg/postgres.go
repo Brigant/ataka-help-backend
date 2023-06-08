@@ -160,7 +160,7 @@ func (r Repo) SelectAllPartners() (string, error) {
 func (r Repo) SelectSlider() ([]structs.Slide, error) {
 	response := []structs.Slide{}
 
-	query := `SELECT title, thumb, created, modified 
+	query := `SELECT id, title, thumb, alt, created, modified 
 			  FROM public.slider AS sld
 			  ORDER BY sld.created DESC;`
 
@@ -173,10 +173,10 @@ func (r Repo) SelectSlider() ([]structs.Slide, error) {
 }
 
 func (r Repo) InsertSlider(ctx context.Context, slider structs.Slide) error {
-	query := `INSERT INTO public.slider (title, thumb)
-			  VALUES($1, $2);`
+	query := `INSERT INTO public.slider (title, thumb, alt)
+			  VALUES($1, $2, $3);`
 
-	result, err := r.db.ExecContext(ctx, query, slider.Title, slider.Thumb)
+	result, err := r.db.ExecContext(ctx, query, slider.Title, slider.Thumb, slider.Alt)
 	if err != nil {
 		pqError := new(pq.Error)
 		if errors.As(err, &pqError) && pqError.Code.Name() == ErrCodeForeignKeyViolation {
