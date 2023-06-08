@@ -10,6 +10,10 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+const (
+	maxFileSize = 5 * 1024 * 1024
+)
+
 type SliderService interface {
 	ReturnSlider() ([]structs.Slide, error)
 	SaveSlider(context.Context, *multipart.Form) error
@@ -69,9 +73,17 @@ func (s Slider) createSlider(ctx *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "thumb is absent")
 	}
 
+	alt := form.Value["alt"]
+
+	if alt == nil {
+		s.log.Debugw("createSlider", "form.Value alt", "alt is blank")
+
+		return fiber.NewError(fiber.StatusBadRequest, "alt is blank")
+	}
+
 	size := file[0].Size
 
-	if size > 5*1024*1024 {
+	if size > maxFileSize {
 		s.log.Debugw("createSlider", "form.File", "file too large")
 
 		return fiber.NewError(fiber.StatusBadRequest, "file too large")
