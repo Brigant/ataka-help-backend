@@ -8,7 +8,7 @@ import (
 )
 
 type Card struct {
-	ID          uuid.UUID       `json:"id" db:"id"`
+	ID          uuid.UUID       `json:"id" db:"id" params:"id"`
 	Title       string          `json:"title" db:"title"`
 	Thumb       string          `json:"thumb" db:"thumb"`
 	Alt         string          `json:"alt" db:"alt"`

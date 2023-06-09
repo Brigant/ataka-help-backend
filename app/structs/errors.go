@@ -5,6 +5,6 @@ import "errors"
 var (
 	ErrForeignViolation  = errors.New("wrong foreign key")
 	ErrUniqueRestriction = errors.New("violation of the database unique restriction")
-	ErrDatabaseInserting = errors.New("ntohing is inserted to database")
+	ErrNoRowAffected     = errors.New("no one row was affected")
 	ErrNotFound          = errors.New("nothing was found")
 )

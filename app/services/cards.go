@@ -14,6 +14,8 @@ type CardsRepo interface {
 	SelectAllCards(context.Context, structs.CardQueryParameters) ([]structs.Card, error)
 	InsertCard(context.Context, structs.Card) error
 	CountRowsTable(context.Context, string) (int, error)
+	SelectCardByID(context.Context, string) (structs.Card, error)
+	DelCardByID(context.Context, string) error
 }
 
 type CardsService struct {
@@ -67,6 +69,23 @@ func (s CardsService) SaveCard(ctx context.Context, form *multipart.Form) error 
 		}
 
 		return fmt.Errorf("error happens while InsertCard: %w", err)
+	}
+
+	return nil
+}
+
+func (s CardsService) ReturnCardByID(ctx context.Context, id string) (structs.Card, error) {
+	card, err := s.Repo.SelectCardByID(ctx, id)
+	if err != nil {
+		return structs.Card{}, fmt.Errorf("error while select card: %w", err)
+	}
+
+	return card, nil
+}
+
+func (s CardsService) DeleteCardByID(ctx context.Context, id string) error {
+	if err := s.Repo.DelCardByID(ctx, id); err != nil {
+		return fmt.Errorf("error while delete card: %w", err)
 	}
 
 	return nil
