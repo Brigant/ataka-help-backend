@@ -34,6 +34,7 @@ func (s SliderService) SaveSlider(ctx context.Context, form *multipart.Form) err
 	slider := structs.Slide{
 		Title: form.Value["title"][0],
 		Thumb: uniqueFilePath(file.Filename, uploadDirectory),
+		Alt:   form.Value["alt"][0],
 	}
 
 	fileOpened, err := file.Open()
