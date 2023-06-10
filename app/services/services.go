@@ -1,7 +1,9 @@
 package services
 
 import (
+	"fmt"
 	"strings"
+	"text/template"
 
 	"github.com/baza-trainee/ataka-help-backend/app/config"
 	"github.com/google/uuid"
@@ -10,6 +12,7 @@ import (
 const (
 	uploadDirectory = "static/uploads/"
 	filePermition   = 0o666
+	templatPath     = "./app/services/template/emailTemplate.go.html"
 )
 
 type RepoInterface interface {
@@ -28,15 +31,20 @@ type Services struct {
 	FeedbackService
 }
 
-func NewService(repo RepoInterface, cfg config.SMTP) Services {
+func NewService(repo RepoInterface, cfg config.SMTP) (Services, error) {
+	template, err := template.ParseFiles(templatPath)
+	if err != nil {
+		return Services{}, fmt.Errorf("error in checkGoogleCaptcha(): %w", err)
+	}
+
 	return Services{
 		CardsService{Repo: repo},
 		PartnersService{Repo: repo},
 		SliderService{Repo: repo},
 		ReportService{},
 		ContactService{Repo: repo},
-		FeedbackService{cfg: cfg},
-	}
+		FeedbackService{cfg: cfg, templateFile: template},
+	}, nil
 }
 
 func uniqueFilePath(fileName, path string) string {

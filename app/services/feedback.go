@@ -15,7 +15,8 @@ import (
 )
 
 type FeedbackService struct {
-	cfg config.SMTP
+	cfg          config.SMTP
+	templateFile *template.Template
 }
 
 func (f FeedbackService) PassFeedback(ctx context.Context, feedback structs.Feedback) error {
@@ -28,7 +29,7 @@ func (f FeedbackService) PassFeedback(ctx context.Context, feedback structs.Feed
 		return structs.ErrCheckCaptcha
 	}
 
-	if err := f.sendMail(feedback, f.cfg.MailAccount, f.cfg.AccountPassword, f.cfg.SMTPServerAddress); err != nil {
+	if err := f.sendMail(feedback, f.cfg.MailAccount, f.cfg.AccountPassword, f.cfg.SMTPServerAddress, f.templateFile); err != nil {
 		return fmt.Errorf("error in sendMail(): %w", err)
 	}
 
@@ -75,15 +76,10 @@ func (f FeedbackService) checkGoogleCaptcha(ctx context.Context, token, googleCa
 	return isValid, nil
 }
 
-func (f FeedbackService) sendMail(feedback structs.Feedback, mailAccount, mailPassword, smtpServer string) error {
+func (f FeedbackService) sendMail(feedback structs.Feedback, mailAccount, mailPassword, smtpServer string, template *template.Template) error {
 	var body bytes.Buffer
 
-	templateFile, err := template.ParseFiles("./static/template/emailTemplate.html")
-	if err != nil {
-		return fmt.Errorf("error in template.ParseFiles(): %w", err)
-	}
-
-	if err := templateFile.Execute(&body, feedback); err != nil {
+	if err := template.Execute(&body, feedback); err != nil {
 		return fmt.Errorf("error in templateFile.Execute(): %w", err)
 	}
 
@@ -93,7 +89,7 @@ func (f FeedbackService) sendMail(feedback structs.Feedback, mailAccount, mailPa
 		mailPassword,
 		smtpServer,
 	)
-
+	
 	headers := fmt.Sprintf(
 		"MIME-version: 1.0;\n"+
 			"Return-Path: <\"%s\">\n"+
@@ -107,14 +103,13 @@ func (f FeedbackService) sendMail(feedback structs.Feedback, mailAccount, mailPa
 
 	msg := "Subject: AtackHelp Feedback\n" + headers + "\n\n" + body.String()
 
-	err = smtp.SendMail(
+	err := smtp.SendMail(
 		smtpServer+":587",
 		auth,
 		mailAccount,
 		[]string{mailAccount},
 		[]byte(msg),
 	)
-
 	if err != nil {
 		return fmt.Errorf("error in smtp.SendMai(): %w", err)
 	}

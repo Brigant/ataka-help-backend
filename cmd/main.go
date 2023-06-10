@@ -21,11 +21,15 @@ func main() {
 	cfg, err := config.InitConfig()
 	if err != nil {
 		log.Print(err.Error())
+
+		return
 	}
 
 	logger, err := logger.New(cfg.LogLevel)
 	if err != nil {
 		log.Print(err.Error())
+
+		return
 	}
 
 	defer logger.Flush()
@@ -33,9 +37,16 @@ func main() {
 	repo, err := pg.NewRepository(cfg)
 	if err != nil {
 		logger.Errorw("New Repository", "error", err.Error())
+
+		return
 	}
 
-	service := services.NewService(repo, cfg.SMTP)
+	service, err := services.NewService(repo, cfg.SMTP)
+	if err != nil {
+		logger.Errorw("NewService", "error", err.Error())
+
+		return
+	}
 
 	handler := api.NewHandler(service, logger)
 
@@ -47,6 +58,8 @@ func main() {
 	go func() {
 		if err := server.HTTPServer.Listen(cfg.Server.AppAddress); err != nil {
 			logger.Errorw("Start and Listen", "error", err.Error())
+
+			return
 		}
 	}()
 
@@ -57,10 +70,14 @@ func main() {
 
 	if err := server.Shutdown(shutdownCtx); err != nil {
 		logger.Errorw("Shutdown server", "error", err.Error())
+
+		return
 	}
 
 	if err := repo.Close(); err != nil {
 		logger.Errorw("Close repository", "error", err.Error())
+
+		return
 	}
 
 	log.Println("server stopped")
