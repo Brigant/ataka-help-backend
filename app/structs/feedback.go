@@ -52,24 +52,23 @@ func (f Feedback) Valiadate() error {
 }
 
 type Message struct {
-	ID       string `json:"id"`
-	From     string `json:"from"`
-	To       string `json:"to"`
-	Subject  string `json:"subject"`
-	BodyHTML string `json:"body_html"`
-	buffer   *bytes.Buffer
+	From     string
+	To       string
+	Subject  string
+	BodyHTML []byte
+	Buffer   *bytes.Buffer
 }
 
-func (m *Message) setHeader(key, value string) {
-	m.buffer.WriteString(key)
-	m.buffer.WriteString(": ")
-	m.buffer.WriteString(value)
-	m.buffer.WriteString("\r\n")
+func (m *Message) SetHeader(key, value string) {
+	m.Buffer.WriteString(key)
+	m.Buffer.WriteString(": ")
+	m.Buffer.WriteString(value)
+	m.Buffer.WriteString("\r\n")
 }
 
-func (m *Message) addBody(content string, contentType string) {
-	m.buffer.WriteString("\r\n")
-	m.buffer.WriteString(content)
-	m.buffer.WriteString("\r\n")
-	m.buffer.WriteString("\r\n")
+func (m *Message) AddBody(content string, contentType string) {
+	m.Buffer.WriteString("\r\n")
+	m.Buffer.WriteString(content)
+	m.Buffer.WriteString("\r\n")
+	m.Buffer.WriteString("\r\n")
 }
