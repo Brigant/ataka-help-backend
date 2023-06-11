@@ -45,7 +45,7 @@ func (r Repo) UpdateContact(ctx context.Context, contact structs.Contact) error 
 		SET phone1=:phone1, phone2=:phone2, email=:email;
 		`
 	result, err := r.db.NamedExecContext(ctx, query, contact)
-	if err != nil {
+	if err != nil { //nolint: wsl
 		pqError := new(pq.Error)
 		if errors.As(err, &pqError) && pqError.Code.Name() == ErrCodeUniqueViolation {
 			return structs.ErrUniqueRestriction
@@ -115,7 +115,6 @@ func (r Repo) SelectAllCards(ctx context.Context, params structs.CardQueryParame
 }
 
 func (r Repo) InsertCard(ctx context.Context, card structs.Card) error {
-
 	query := `INSERT INTO public.cards
 	(title, thumb, alt, description)
 	VALUES($1, $2, $3, $4::json);`

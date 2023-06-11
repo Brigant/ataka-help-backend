@@ -56,7 +56,9 @@ func (h ReportHandler) updateReport(ctx *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 
+
 	if len(form.File["thumb"]) < minimalNumberOfItems {
+
 		h.log.Debugw("updateReport", "form.File", "no repport was attached")
 
 		return fiber.NewError(fiber.StatusBadRequest, "no repport was attached")
