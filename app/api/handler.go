@@ -55,7 +55,6 @@ func isAllowedFileExtention(allowedList []string, fileName string) bool {
 	nameParts := strings.Split(fileName, ".")
 
 	fileExt := nameParts[len(nameParts)-1]
-	fmt.Println(fileExt)
 	for _, i := range allowedList {
 		if i == fileExt {
 			return true
