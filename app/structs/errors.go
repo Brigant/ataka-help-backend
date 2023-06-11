@@ -7,4 +7,6 @@ var (
 	ErrUniqueRestriction = errors.New("violation of the database unique restriction")
 	ErrDatabaseInserting = errors.New("ntohing is inserted to database")
 	ErrNotFound          = errors.New("nothing was found")
+	ErrCheckCaptcha      = errors.New("captha doesn't confirm the checking")
+	ErrMailSending       = errors.New("error happaned while sendin email")
 )

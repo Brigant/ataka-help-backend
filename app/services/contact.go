@@ -17,7 +17,7 @@ type ContactService struct {
 }
 
 func (s ContactService) Modify(ctx context.Context, contact structs.Contact) error {
-	if err := s.Repo.UpdateContact(ctx, contact); err!=nil {
+	if err := s.Repo.UpdateContact(ctx, contact); err != nil {
 		return fmt.Errorf("error occures while UpdateContact(): %w", err)
 	}
 
@@ -26,8 +26,8 @@ func (s ContactService) Modify(ctx context.Context, contact structs.Contact) err
 
 func (s ContactService) Obtain(ctx context.Context) (structs.Contact, error) {
 	contact, err := s.Repo.SelectContact(ctx)
-	if err!=nil {
-		return structs.Contact{}, fmt.Errorf("error occured while SelectContact(): %w", err)
+	if err != nil {
+		return structs.Contact{}, fmt.Errorf("error occurred while SelectContact(): %w", err)
 	}
 
 	return contact, nil
