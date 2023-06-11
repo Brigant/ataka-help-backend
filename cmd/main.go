@@ -58,8 +58,6 @@ func main() {
 	go func() {
 		if err := server.HTTPServer.Listen(cfg.Server.AppAddress); err != nil {
 			logger.Errorw("Start and Listen", "error", err.Error())
-
-			return
 		}
 	}()
 

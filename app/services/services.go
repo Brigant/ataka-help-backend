@@ -11,7 +11,7 @@ import (
 const (
 	uploadDirectory = "static/uploads/"
 	filePermition   = 0o666
-	templatPath     = "./app/services/template/emailTemplate.go.html"
+	templatPath     = "./app/services/template/emailTemplate.gohtml"
 )
 
 type RepoInterface interface {
