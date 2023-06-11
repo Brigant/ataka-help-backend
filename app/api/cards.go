@@ -56,7 +56,7 @@ func (h CardHandler) getCards(ctx *fiber.Ctx) error {
 
 // nolint: cyclop
 func (h CardHandler) createCard(ctx *fiber.Ctx) error {
-	allowedContentType := []string{"image/jpg", "image/jpeg", "image/webp", "image/png"}
+	allowedFileExtentions := []string{"jpg", "jpeg", "webp", "png"}
 
 	const (
 		limitNumberItemsFile = 1
@@ -71,7 +71,7 @@ func (h CardHandler) createCard(ctx *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 
-	if len(form.File["thumb"]) < fileLimit {
+	if len(form.File["thumb"]) < limitNumberItemsFile {
 		h.log.Debugw("createCard", "form.File", "no thumb was attached")
 
 		return fiber.NewError(fiber.StatusBadRequest, "no thumb was attached")
@@ -80,7 +80,7 @@ func (h CardHandler) createCard(ctx *fiber.Ctx) error {
 	fileHeader := form.File["thumb"][0]
 
 	switch {
-	case fileHeader == nil || fileHeader.Size > fileLimit || !isAllowedContentType(allowedContentType, fileHeader.Header["Content-Type"][0]):
+	case fileHeader == nil || fileHeader.Size > fileLimit || !isAllowedFileExtention(allowedFileExtentions, fileHeader.Filename):
 		h.log.Debugw("createCard", "form.File", "required thumb not biger then 5 Mb and format jpg/jpeg/webp")
 
 		return fiber.NewError(fiber.StatusBadRequest, "required thumb not bigger then 5 Mb and format jpg/jpeg/webp")
