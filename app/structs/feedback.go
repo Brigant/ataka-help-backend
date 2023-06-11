@@ -1,6 +1,7 @@
 package structs
 
 import (
+	"bytes"
 	"errors"
 	"regexp"
 )
@@ -48,4 +49,26 @@ func (f Feedback) Valiadate() error {
 	}
 
 	return nil
+}
+
+type Message struct {
+	From     string
+	To       string
+	Subject  string
+	BodyHTML []byte
+	Buffer   *bytes.Buffer
+}
+
+func (m *Message) SetHeader(key, value string) {
+	m.Buffer.WriteString(key)
+	m.Buffer.WriteString(": ")
+	m.Buffer.WriteString(value)
+	m.Buffer.WriteString("\r\n")
+}
+
+func (m *Message) AddBody(content string, contentType string) {
+	m.Buffer.WriteString("\r\n")
+	m.Buffer.WriteString(content)
+	m.Buffer.WriteString("\r\n")
+	m.Buffer.WriteString("\r\n")
 }

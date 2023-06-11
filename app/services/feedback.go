@@ -15,11 +15,43 @@ import (
 )
 
 type FeedbackService struct {
-	cfg config.SMTP
+	auth         smtp.Auth
+	templateFile *template.Template
+	message      structs.Message
+	captchaKey   string
+	smtpServer   string
+}
+
+func NewFeedbackService(cfg config.SMTP) (FeedbackService, error) {
+	auth := smtp.PlainAuth(
+		"",
+		cfg.MailAccount,
+		cfg.AccountPassword,
+		cfg.SMTPServerAddress,
+	)
+
+	template, err := template.ParseFiles(templatPath)
+	if err != nil {
+		return FeedbackService{}, fmt.Errorf("error in PasreFiles(): %w", err)
+	}
+
+	message := structs.Message{
+		From:    cfg.MailAccount,
+		To:      cfg.MailAccount,
+		Subject: "AtakHelp Feedback",
+	}
+
+	return FeedbackService{
+		auth:         auth,
+		templateFile: template,
+		message:      message,
+		captchaKey:   cfg.CaptchaKey,
+		smtpServer:   cfg.SMTPServerAddress,
+	}, nil
 }
 
 func (f FeedbackService) PassFeedback(ctx context.Context, feedback structs.Feedback) error {
-	ok, err := f.checkGoogleCaptcha(ctx, feedback.Token, f.cfg.CaptchaKey)
+	ok, err := f.checkGoogleCaptcha(ctx, feedback.Token, f.captchaKey)
 	if err != nil {
 		return fmt.Errorf("error in checkGoogleCaptcha(): %w", err)
 	}
@@ -28,8 +60,13 @@ func (f FeedbackService) PassFeedback(ctx context.Context, feedback structs.Feed
 		return structs.ErrCheckCaptcha
 	}
 
-	if err := f.sendMail(feedback, f.cfg.MailAccount, f.cfg.AccountPassword, f.cfg.SMTPServerAddress); err != nil {
-		return fmt.Errorf("error in sendMail(): %w", err)
+	var body bytes.Buffer
+	if err := f.templateFile.Execute(&body, feedback); err != nil {
+		return fmt.Errorf("error in templateFile.Execute(): %w", err)
+	}
+
+	if err := f.sendMail(body); err != nil {
+		return err
 	}
 
 	return nil
@@ -75,46 +112,25 @@ func (f FeedbackService) checkGoogleCaptcha(ctx context.Context, token, googleCa
 	return isValid, nil
 }
 
-func (f FeedbackService) sendMail(feedback structs.Feedback, mailAccount, mailPassword, smtpServer string) error {
-	var body bytes.Buffer
+func (f FeedbackService) sendMail(body bytes.Buffer) error {
+	f.message.Buffer = bytes.NewBuffer(make([]byte, 256))
+	f.message.Buffer.Reset()
+	f.message.SetHeader("MIME-Version", "1.0")
 
-	templateFile, err := template.ParseFiles("./static/template/emailTemplate.html")
-	if err != nil {
-		return fmt.Errorf("error in template.ParseFiles(): %w", err)
-	}
+	f.message.SetHeader("From", f.message.From)
+	f.message.SetHeader("To", f.message.To)
+	f.message.SetHeader("Subject", f.message.Subject)
+	f.message.SetHeader("Content-Type", "text/html; charset=UTF-8")
+	f.message.Buffer.WriteString("\r\n")
+	f.message.AddBody(body.String(), "text/html")
 
-	if err := templateFile.Execute(&body, feedback); err != nil {
-		return fmt.Errorf("error in templateFile.Execute(): %w", err)
-	}
-
-	auth := smtp.PlainAuth(
-		"",
-		mailAccount,
-		mailPassword,
-		smtpServer,
+	err := smtp.SendMail(
+		f.smtpServer+":587",
+		f.auth,
+		f.message.From,
+		[]string{f.message.To},
+		f.message.Buffer.Bytes(),
 	)
-
-	headers := fmt.Sprintf(
-		"MIME-version: 1.0;\n"+
-			"Return-Path: <\"%s\">\n"+
-			"From: \"%s\";\n"+
-			"To: \"%s\";\n"+
-			"Content-Type: text/html; charset=\"UTF-8\";",
-		mailAccount,
-		mailAccount,
-		mailAccount,
-	)
-
-	msg := "Subject: AtackHelp Feedback\n" + headers + "\n\n" + body.String()
-
-	err = smtp.SendMail(
-		smtpServer+":587",
-		auth,
-		mailAccount,
-		[]string{mailAccount},
-		[]byte(msg),
-	)
-
 	if err != nil {
 		return fmt.Errorf("error in smtp.SendMai(): %w", err)
 	}

@@ -1,6 +1,7 @@
 package services
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/baza-trainee/ataka-help-backend/app/config"
@@ -10,6 +11,7 @@ import (
 const (
 	uploadDirectory = "static/uploads/"
 	filePermition   = 0o666
+	templatPath     = "./app/services/template/emailTemplate.gohtml"
 )
 
 type RepoInterface interface {
@@ -28,15 +30,20 @@ type Services struct {
 	FeedbackService
 }
 
-func NewService(repo RepoInterface, cfg config.SMTP) Services {
+func NewService(repo RepoInterface, cfg config.SMTP) (Services, error) {
+	feedbackService, err := NewFeedbackService(cfg)
+	if err != nil {
+		return Services{}, fmt.Errorf("error in NewFeedbackService(): %w", err)
+	}
+
 	return Services{
 		CardsService{Repo: repo},
 		PartnersService{Repo: repo},
 		SliderService{Repo: repo},
 		ReportService{},
 		ContactService{Repo: repo},
-		FeedbackService{cfg: cfg},
-	}
+		feedbackService,
+	}, nil
 }
 
 func uniqueFilePath(fileName, path string) string {

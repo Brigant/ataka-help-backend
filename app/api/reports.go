@@ -46,8 +46,7 @@ func (h ReportHandler) getReports(ctx *fiber.Ctx) error {
 }
 
 func (h ReportHandler) updateReport(ctx *fiber.Ctx) error {
-	const minimalNumberOfItems = 1
-
+	const minimalCountItems = 1
 	allowedType := []string{"application/pdf"}
 	allowedExtention := []string{"pdf"}
 
@@ -56,7 +55,7 @@ func (h ReportHandler) updateReport(ctx *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 
-	if len(form.File["thumb"]) < minimalNumberOfItems {
+	if len(form.File["thumb"]) < minimalCountItems {
 		h.log.Debugw("updateReport", "form.File", "no repport was attached")
 
 		return fiber.NewError(fiber.StatusBadRequest, "no repport was attached")
