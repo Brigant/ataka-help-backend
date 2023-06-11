@@ -265,7 +265,7 @@ paths:
        { $ref: "#/components/requestBodies/Feedback"}
       responses:
         "200": { $ref: "#/components/responses/Success" }
-        "409": { $ref: "#/components/responses/Conflict" }
+        "404": { $ref: "#/components/responses/Conflict" }
         "500": { $ref: "#/components/responses/InternalError" }
   
   /slider:
@@ -403,7 +403,7 @@ paths:
     get: 
       tags:
         - reports
-      summary:  Return first last added report
+      summary:  Return the report
       operationId: getReports
       responses:
         "200":
@@ -419,10 +419,8 @@ paths:
                   data:
                     type: array
                     items:
-                      $ref: "#/components/schemas/Document"
-        "401": { $ref: "#/components/responses/Unauthorized" }
+                      $ref: "#/components/schemas/Report"
         "404": { $ref: "#/components/responses/NotFound" }
-        "500": { $ref: "#/components/responses/InternalError" }
 
     put: 
       tags:
@@ -435,7 +433,7 @@ paths:
             schema:
               type: object
               required:
-                - "report"
+                - "thumb"
               properties:
                 report:
                   type: string
@@ -443,12 +441,23 @@ paths:
             encoding:
               report:
                 contentType: application/pdf
-
-
       responses:
-        "200": { $ref: "#/components/responses/Success" }
+        "201": { $ref: "#/components/responses/Created" }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
+        "500": { $ref: "#/components/responses/InternalError" }
+      security:
+        - BearerAuth: []
+
+    delete: 
+      tags:
+        - reports
+      summary: Just delete the report file. 
+      operationId: deleteReports
+      responses:
+        "200": { $ref: "#/components/responses/Created" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/InternalError" }
       security:
         - BearerAuth: []
@@ -492,27 +501,17 @@ paths:
 
 components:
   schemas:
-    Document:
+    Report:
       type: object
       description: Represents a simple pdf file
       required:
         - file
-        - path
       properties:
         file:
           type: string
           format: binary
           pattern: "^.*\\.pdf$"
-          description: Maximum file size must not exceed 5MB
-        id:
-          type: string
-          format: uuid
-          uniqueItems: true
-        path:
-          type: string
-          format: path
-          description: Path to the file
-          uniqueItems: true
+          description: Maximum file size must not exceed 2MB
   
     Partner:
       type: object
@@ -674,7 +673,7 @@ components:
       content:
         multipart/form-data:
           schema:
-            $ref: "#/components/schemas/Document"
+            $ref: "#/components/schemas/Report"
       description: Partner object that needs to be added to the server
       
     Partner:
