@@ -25,9 +25,17 @@ type Postgres struct {
 	SSLmode  string `env:"DB_SSL_MODE" envDefault:"disable"`
 }
 
+type SMTP struct {
+	MailAccount       string `env:"SMTP_ACCOUNT"`
+	AccountPassword   string `env:"SMTP_PASSWORD"`
+	SMTPServerAddress string `env:"SMTP_ADDRESS"`
+	CaptchaKey        string `env:"CAPTCHA_KEY"`
+}
+
 type Config struct {
 	Server          Server
 	DB              Postgres
+	SMTP            SMTP
 	LogLevel        string        `env:"LOG_LEVEL" envDefault:"INFO"`
 	Salt            string        `env:"APP_SALT,notEmpty"`
 	SigningKey      string        `env:"SIGNING_KEY,notEmpty"`
