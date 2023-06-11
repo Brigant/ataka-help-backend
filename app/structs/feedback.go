@@ -1,6 +1,7 @@
 package structs
 
 import (
+	"bytes"
 	"errors"
 	"regexp"
 )
@@ -48,4 +49,27 @@ func (f Feedback) Valiadate() error {
 	}
 
 	return nil
+}
+
+type Message struct {
+	ID       string `json:"id"`
+	From     string `json:"from"`
+	To       string `json:"to"`
+	Subject  string `json:"subject"`
+	BodyHTML string `json:"body_html"`
+	buffer   *bytes.Buffer
+}
+
+func (m *Message) setHeader(key, value string) {
+	m.buffer.WriteString(key)
+	m.buffer.WriteString(": ")
+	m.buffer.WriteString(value)
+	m.buffer.WriteString("\r\n")
+}
+
+func (m *Message) addBody(content string, contentType string) {
+	m.buffer.WriteString("\r\n")
+	m.buffer.WriteString(content)
+	m.buffer.WriteString("\r\n")
+	m.buffer.WriteString("\r\n")
 }

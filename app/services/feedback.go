@@ -15,22 +15,34 @@ import (
 )
 
 type FeedbackService struct {
-	cfg          config.SMTP
+	auth         smtp.Auth
 	templateFile *template.Template
+	captchaKey   string
+}
+
+func NewFeedbackService(cfg config.SMTP) (FeedbackService, error) {
+	auth := smtp.PlainAuth("", cfg.MailAccount, cfg.AccountPassword, cfg.SMTPServerAddress)
+
+	template, err := template.ParseFiles(templatPath)
+	if err != nil {
+		return FeedbackService{}, fmt.Errorf("error in checkGoogleCaptcha(): %w", err)
+	}
+
+	return FeedbackService{
+		auth:         auth,
+		templateFile: template,
+		captchaKey:   cfg.CaptchaKey,
+	}, nil
 }
 
 func (f FeedbackService) PassFeedback(ctx context.Context, feedback structs.Feedback) error {
-	ok, err := f.checkGoogleCaptcha(ctx, feedback.Token, f.cfg.CaptchaKey)
+	ok, err := f.checkGoogleCaptcha(ctx, feedback.Token, f.captchaKey)
 	if err != nil {
 		return fmt.Errorf("error in checkGoogleCaptcha(): %w", err)
 	}
 
 	if !ok {
 		return structs.ErrCheckCaptcha
-	}
-
-	if err := f.sendMail(feedback, f.cfg.MailAccount, f.cfg.AccountPassword, f.cfg.SMTPServerAddress, f.templateFile); err != nil {
-		return fmt.Errorf("error in sendMail(): %w", err)
 	}
 
 	return nil
@@ -76,6 +88,9 @@ func (f FeedbackService) checkGoogleCaptcha(ctx context.Context, token, googleCa
 	return isValid, nil
 }
 
+func (f FeedbackService) sMail() {
+}
+
 func (f FeedbackService) sendMail(feedback structs.Feedback, mailAccount, mailPassword, smtpServer string, template *template.Template) error {
 	var body bytes.Buffer
 
@@ -89,7 +104,7 @@ func (f FeedbackService) sendMail(feedback structs.Feedback, mailAccount, mailPa
 		mailPassword,
 		smtpServer,
 	)
-	
+
 	headers := fmt.Sprintf(
 		"MIME-version: 1.0;\n"+
 			"Return-Path: <\"%s\">\n"+

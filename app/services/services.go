@@ -3,7 +3,6 @@ package services
 import (
 	"fmt"
 	"strings"
-	"text/template"
 
 	"github.com/baza-trainee/ataka-help-backend/app/config"
 	"github.com/google/uuid"
@@ -32,9 +31,9 @@ type Services struct {
 }
 
 func NewService(repo RepoInterface, cfg config.SMTP) (Services, error) {
-	template, err := template.ParseFiles(templatPath)
+	feedbackService, err := NewFeedbackService(cfg)
 	if err != nil {
-		return Services{}, fmt.Errorf("error in checkGoogleCaptcha(): %w", err)
+		return Services{}, fmt.Errorf("error in NewFeedbackService(): %w", err)
 	}
 
 	return Services{
@@ -43,7 +42,7 @@ func NewService(repo RepoInterface, cfg config.SMTP) (Services, error) {
 		SliderService{Repo: repo},
 		ReportService{},
 		ContactService{Repo: repo},
-		FeedbackService{cfg: cfg, templateFile: template},
+		feedbackService,
 	}, nil
 }
 
