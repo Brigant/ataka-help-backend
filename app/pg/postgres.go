@@ -2,6 +2,7 @@ package pg
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 
@@ -60,7 +61,7 @@ func (r Repo) UpdateContact(ctx context.Context, contact structs.Contact) error 
 	}
 
 	if effectedRows != expectedEffectedRow {
-		return structs.ErrDatabaseInserting
+		return structs.ErrNoRowAffected
 	}
 
 	return nil
@@ -135,7 +136,7 @@ func (r Repo) InsertCard(ctx context.Context, card structs.Card) error {
 	}
 
 	if effectedRows != expectedAffectedRow {
-		return structs.ErrDatabaseInserting
+		return structs.ErrNoRowAffected
 	}
 
 	return nil
@@ -196,7 +197,43 @@ func (r Repo) InsertSlider(ctx context.Context, slider structs.Slide) error {
 	}
 
 	if effectedRows != expectedAffectedRow {
-		return structs.ErrDatabaseInserting
+		return structs.ErrNoRowAffected
+	}
+
+	return nil
+}
+
+func (r Repo) SelectCardByID(ctx context.Context, id string) (structs.Card, error) {
+	query := `SELECT * FROM public.cards WHERE id=$1`
+
+	card := structs.Card{}
+
+	if err := r.db.GetContext(ctx, &card, query, id); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return structs.Card{}, structs.ErrNotFound
+		}
+
+		return structs.Card{}, fmt.Errorf("error in GetContext(): %w", err)
+	}
+
+	return card, nil
+}
+
+func (r Repo) DelCardByID(ctx context.Context, id string) error {
+	query := `DELETE FROM public.cards WHERE id=$1`
+
+	sqlResult, err := r.db.ExecContext(ctx, query, id)
+	if err != nil {
+		return fmt.Errorf("error in ExecContext(): %w", err)
+	}
+
+	affectedRows, err := sqlResult.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("the error is in RowsAffected: %w", err)
+	}
+
+	if affectedRows != expectedAffectedRow {
+		return structs.ErrNoRowAffected
 	}
 
 	return nil

@@ -1,7 +1,6 @@
 package api
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/baza-trainee/ataka-help-backend/app/logger"
