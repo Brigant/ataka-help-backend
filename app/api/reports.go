@@ -64,14 +64,13 @@ func (h ReportHandler) updateReport(ctx *fiber.Ctx) error {
 
 	fileHeader := form.File["thumb"][0]
 
-	if fileHeader == nil || fileHeader.Size > fileLimit || !isAllowedFileExtention(allowedExtentions, fileHeader.Filename) {
+	if fileHeader == nil || fileHeader.Size > fileLimit {
 		h.log.Debugw("updateReport", "form.File", "required file not bigger then 5 Mb and in pdf format")
 
 		return fiber.NewError(fiber.StatusBadRequest, "required file not bigger then 2 Mb and in pdf format")
 	}
 
-
-	if !isAllowedFileExtention(allowedExtention, fileHeader.Filename) {
+	if !isAllowedFileExtention(allowedExtentions, fileHeader.Filename) {
 		h.log.Debugw("updateReport", "isAllowedFileExtention", "required file in pdf format")
 
 		return fiber.NewError(fiber.StatusBadRequest, "required file in pdf format")
