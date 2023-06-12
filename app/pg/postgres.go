@@ -174,7 +174,7 @@ func (r Repo) SelectSlider() ([]structs.Slide, error) {
 }
 
 func (r Repo) InsertSlider(ctx context.Context, slider structs.Slide) error {
-	query := `INSERT INTO public.slider (title, thumb, alt)
+	query := `INSERT INTO slider (title, thumb, alt)
 			  VALUES($1, $2, $3);`
 
 	result, err := r.db.ExecContext(ctx, query, slider.Title, slider.Thumb, slider.Alt)

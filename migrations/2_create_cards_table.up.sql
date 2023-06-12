@@ -1,8 +1,8 @@
 CREATE TABLE "cards" (
   "id" uuid DEFAULT gen_random_uuid() NOT NULL,
-  "title" VARCHAR(252) NOT NULL,
+  "title" VARCHAR(300) NOT NULL,
   "thumb" VARCHAR(255) NOT NULL,
-  "alt" VARCHAR(255),
+  "alt" VARCHAR(30),
   "description" JSONB NOT NULL,
   "created" Timestamp With Time Zone NOT NULL DEFAULT NOW(),
   "modified" Timestamp With Time Zone NOT NULL DEFAULT NOW(),
