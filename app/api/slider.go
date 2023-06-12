@@ -48,6 +48,15 @@ func (s Slider) getSlider(ctx *fiber.Ctx) error {
 }
 
 func (s Slider) createSlider(ctx *fiber.Ctx) error {
+	allowedFileExtentions := []string{"jpg", "jpeg", "webp", "png"}
+
+	const (
+		minTitle = 4
+		maxTitle = 300
+		minAlt   = 10
+		maxAlt   = 30
+	)
+
 	form, err := ctx.MultipartForm()
 	if err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
@@ -55,7 +64,7 @@ func (s Slider) createSlider(ctx *fiber.Ctx) error {
 
 	title := form.Value["title"]
 
-	if title == nil || len(title[0]) < 4 || len(title[0]) > 300 {
+	if title == nil || len(title[0]) < minTitle || len(title[0]) > maxTitle {
 		s.log.Debugw("createSlider", "form.Value title", "title is blank or out of range limits")
 
 		return fiber.NewError(fiber.StatusBadRequest, "title is blank or out of range limits")
@@ -67,7 +76,7 @@ func (s Slider) createSlider(ctx *fiber.Ctx) error {
 		s.log.Debugw("createSlider", "file-name", file[0].Filename, "file-size", file[0].Size)
 	}
 
-	if file == nil || !isAllowedContentType(allowedContentType, file[0].Header["Content-Type"][0]) {
+	if file == nil || !isAllowedFileExtention(allowedFileExtentions, file[0].Filename) {
 		s.log.Debugw("createSlider", "form.File", err.Error())
 
 		return fiber.NewError(fiber.StatusBadRequest, "thumb is absent")
@@ -75,10 +84,10 @@ func (s Slider) createSlider(ctx *fiber.Ctx) error {
 
 	alt := form.Value["alt"]
 
-	if alt == nil {
-		s.log.Debugw("createSlider", "form.Value alt", "alt is blank")
+	if alt == nil || len(alt[0]) < minAlt || len(alt[0]) > maxAlt {
+		s.log.Debugw("createSlider", "form.Value alt", "alt is blank or out of limits")
 
-		return fiber.NewError(fiber.StatusBadRequest, "alt is blank")
+		return fiber.NewError(fiber.StatusBadRequest, "alt is blank or out of limits")
 	}
 
 	size := file[0].Size

@@ -1,7 +1,8 @@
 CREATE TABLE "slider" (
   "id" uuid DEFAULT gen_random_uuid() NOT NULL,
-  "title" VARCHAR(30) NOT NULL,
+  "title" VARCHAR(300) NOT NULL,
   "thumb" VARCHAR(255) NOT NULL,
+  "alt" VARCHAR(30) NOT NULL,
   "created" Timestamp With Time Zone NOT NULL DEFAULT NOW(),
   "modified" Timestamp With Time Zone NOT NULL DEFAULT NOW(),
   PRIMARY KEY ("id"),
