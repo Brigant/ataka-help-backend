@@ -32,7 +32,7 @@ config.yaml
 coverage.*
 
 # Uploads files
-*/uploads/*.* 
+static/uploads/*.* 
 !.gitkeep
 
 # Directories

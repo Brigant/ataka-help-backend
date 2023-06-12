@@ -1,6 +1,7 @@
 package api
 
 import (
+	"errors"
 	"mime/multipart"
 
 	"github.com/baza-trainee/ataka-help-backend/app/logger"
@@ -9,8 +10,9 @@ import (
 )
 
 type ReportService interface {
-	ReturnReport() string
+	ReturnReport() (string, error)
 	ChangeReport(*multipart.Form) error
+	DeleteReport() error
 }
 
 type ReportHandler struct {
@@ -26,7 +28,14 @@ func NewReportHandler(service ReportService, log *logger.Logger) ReportHandler {
 }
 
 func (h ReportHandler) getReports(ctx *fiber.Ctx) error {
-	report := h.Service.ReturnReport()
+	report, err := h.Service.ReturnReport()
+	if err != nil {
+		if errors.Is(err, structs.ErrNotFound) {
+			return fiber.NewError(fiber.StatusNotFound, err.Error())
+		}
+
+		return fiber.NewError(fiber.StatusNotFound, err.Error())
+	}
 
 	response := structs.ReportResponse{
 		Code: fiber.StatusOK,
@@ -37,29 +46,51 @@ func (h ReportHandler) getReports(ctx *fiber.Ctx) error {
 }
 
 func (h ReportHandler) updateReport(ctx *fiber.Ctx) error {
-	allowedFileExtentions := []string{"pdf"}
+	const minimalNumberOfItems = 1
+
+	allowedExtentions := []string{"pdf"}
 
 	form, err := ctx.MultipartForm()
 	if err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 
-	if len(form.File["report"]) < 1 {
+	if len(form.File["thumb"]) < minimalNumberOfItems {
+
 		h.log.Debugw("updateReport", "form.File", "no repport was attached")
 
 		return fiber.NewError(fiber.StatusBadRequest, "no repport was attached")
 	}
 
-	fileHeader := form.File["report"][0]
+	fileHeader := form.File["thumb"][0]
 
-	if fileHeader == nil || fileHeader.Size > fileLimit || !isAllowedFileExtention(allowedFileExtentions, fileHeader.Filename) {
+	if fileHeader == nil || fileHeader.Size > fileLimit || !isAllowedFileExtention(allowedExtentions, fileHeader.Filename) {
 		h.log.Debugw("updateReport", "form.File", "required file not bigger then 5 Mb and in pdf format")
 
-		return fiber.NewError(fiber.StatusBadRequest, "required file not bigger then 5 Mb and in pdf format")
+		return fiber.NewError(fiber.StatusBadRequest, "required file not bigger then 2 Mb and in pdf format")
+	}
+
+
+	if !isAllowedFileExtention(allowedExtention, fileHeader.Filename) {
+		h.log.Debugw("updateReport", "isAllowedFileExtention", "required file in pdf format")
+
+		return fiber.NewError(fiber.StatusBadRequest, "required file in pdf format")
 	}
 
 	if err := h.Service.ChangeReport(form); err != nil {
 		h.log.Errorf("ChangeReport", "error", err.Error())
+
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	}
+
+	return ctx.Status(fiber.StatusCreated).JSON(structs.SetResponse(fiber.StatusCreated, "success")) // nolint
+}
+
+func (h ReportHandler) deleteReport(ctx *fiber.Ctx) error {
+	if err := h.Service.DeleteReport(); err != nil {
+		if errors.Is(err, structs.ErrNotFound) {
+			return fiber.NewError(fiber.StatusNotFound, err.Error())
+		}
 
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}

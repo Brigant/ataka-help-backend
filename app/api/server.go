@@ -12,7 +12,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/recover"
 )
 
-const bodyLimit = 50 * 1024 * 1024
+const bodyLimit = 2 * 1024 * 1024
 
 type Server struct {
 	HTTPServer *fiber.App
@@ -66,17 +66,23 @@ func (s Server) initRoutes(app *fiber.App, h Handler) {
 
 	app.Get("/cards", h.Card.getCards)
 	app.Post("/cards", h.Card.createCard)
+	app.Get("/cards/:id", h.Card.findCard)
+	app.Delete("cards/:id", h.Card.deleteCard)
 
 	app.Get("/partners", h.Partner.get)
 
 	app.Get("/slider", h.Slider.getSlider)
 	app.Post("/slider", h.Slider.createSlider)
 
-	app.Put("/contacts", h.Contact.Edit)
-	app.Get("/contacts", h.Contact.Get)
+	app.Put("/contacts", h.Contact.edit)
+	app.Get("/contacts", h.Contact.get)
 
 	app.Get("/reports", h.Report.getReports)
 	app.Put("/reports", h.Report.updateReport)
+	app.Delete("/reports", h.Report.deleteReport)
+
+	app.Post("/feedback", h.Feedback.sendFedback)
+
 }
 
 func corsConfig() cors.Config {
