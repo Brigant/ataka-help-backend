@@ -48,14 +48,12 @@ func (h ReportHandler) getReports(ctx *fiber.Ctx) error {
 func (h ReportHandler) updateReport(ctx *fiber.Ctx) error {
 	const minimalNumberOfItems = 1
 
-	allowedType := []string{"application/pdf"}
-	allowedExtention := []string{"pdf"}
+	allowedExtentions := []string{"pdf"}
 
 	form, err := ctx.MultipartForm()
 	if err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
-
 
 	if len(form.File["thumb"]) < minimalNumberOfItems {
 
@@ -66,13 +64,13 @@ func (h ReportHandler) updateReport(ctx *fiber.Ctx) error {
 
 	fileHeader := form.File["thumb"][0]
 
-	if fileHeader == nil || fileHeader.Size > fileLimit || !isAllowedContentType(allowedType, fileHeader.Header["Content-Type"][0]) {
-		h.log.Debugw("updateReport", "form.File", "required file not bigger then 2 Mb and in pdf format")
+	if fileHeader == nil || fileHeader.Size > fileLimit {
+		h.log.Debugw("updateReport", "form.File", "required file not bigger then 5 Mb and in pdf format")
 
 		return fiber.NewError(fiber.StatusBadRequest, "required file not bigger then 2 Mb and in pdf format")
 	}
 
-	if !isAllowedFileExtention(allowedExtention, fileHeader.Filename) {
+	if !isAllowedFileExtention(allowedExtentions, fileHeader.Filename) {
 		h.log.Debugw("updateReport", "isAllowedFileExtention", "required file in pdf format")
 
 		return fiber.NewError(fiber.StatusBadRequest, "required file in pdf format")

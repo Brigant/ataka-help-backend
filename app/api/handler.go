@@ -43,16 +43,6 @@ func NewHandler(services ServiceInterfaces, log *logger.Logger) Handler {
 	}
 }
 
-func isAllowedContentType(allowedList []string, contentType string) bool {
-	for _, i := range allowedList {
-		if i == contentType {
-			return true
-		}
-	}
-
-	return false
-}
-
 func isAllowedFileExtention(allowedList []string, fileName string) bool {
 	nameParts := strings.Split(fileName, ".")
 
