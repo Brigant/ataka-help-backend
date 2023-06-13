@@ -2,21 +2,27 @@ package api
 
 import (
 	"context"
+	"errors"
 	"mime/multipart"
 	"net/http"
+	"time"
 
 	"github.com/baza-trainee/ataka-help-backend/app/logger"
 	"github.com/baza-trainee/ataka-help-backend/app/structs"
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 )
 
 const (
 	maxFileSize = 5 * 1024 * 1024
+	id          = "id"
+	nothing     = "nothing"
 )
 
 type SliderService interface {
-	ReturnSlider() ([]structs.Slide, error)
+	ReturnSlider(context.Context) ([]structs.Slide, error)
 	SaveSlider(context.Context, *multipart.Form) error
+	DeleteSlideByID(context.Context) error
 }
 
 type Slider struct {
@@ -32,7 +38,13 @@ func NewSliderHandler(service SliderService, log *logger.Logger) Slider {
 }
 
 func (s Slider) getSlider(ctx *fiber.Ctx) error {
-	response, err := s.Service.ReturnSlider()
+	ctxUser := ctx.UserContext()
+
+	ctxWithDeadline, cancel := context.WithDeadline(ctxUser, time.Now().Add(2*time.Second))
+
+	defer cancel()
+
+	response, err := s.Service.ReturnSlider(ctxWithDeadline)
 	if err != nil {
 		s.log.Errorw("getSlider", "getSlider error", err.Error())
 
@@ -98,11 +110,50 @@ func (s Slider) createSlider(ctx *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "file too large")
 	}
 
-	if err := s.Service.SaveSlider(ctx.Context(), form); err != nil {
+	ctxUser := ctx.UserContext()
+
+	ctxWithDeadline, cancel := context.WithDeadline(ctxUser, time.Now().Add(2*time.Second))
+
+	defer cancel()
+
+	if err := s.Service.SaveSlider(ctxWithDeadline, form); err != nil {
 		s.log.Errorw("createSlider", "createSlider error", err.Error())
 
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
 	return ctx.JSON(structs.SetResponse(http.StatusOK, "success"))
+}
+
+func (s Slider) deleteSlide(ctx *fiber.Ctx) error {
+	param := struct {
+		ID string `params:"id"`
+	}{}
+
+	if err := ctx.ParamsParser(&param); err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	}
+
+	_, err := uuid.Parse(param.ID)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "id is not uuid type")
+	}
+
+	ctxUser := ctx.UserContext()
+
+	ctxWithValue := context.WithValue(ctxUser, id, param.ID)
+
+	ctxWithDeadline, cancel := context.WithDeadline(ctxWithValue, time.Now().Add(2*time.Second))
+
+	defer cancel()
+
+	if err := s.Service.DeleteSlideByID(ctxWithDeadline); err != nil {
+		if errors.Is(err, structs.ErrNoRowAffected) {
+			return fiber.NewError(fiber.StatusBadRequest, err.Error())
+		}
+
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	}
+
+	return ctx.Status(fiber.StatusOK).JSON(structs.SetResponse(fiber.StatusOK, "success"))
 }

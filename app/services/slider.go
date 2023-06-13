@@ -11,16 +11,17 @@ import (
 )
 
 type SliderRepo interface {
-	SelectSlider() ([]structs.Slide, error)
+	SelectSlider(context.Context) ([]structs.Slide, error)
 	InsertSlider(context.Context, structs.Slide) error
+	DelSlideByID(context.Context) (string, error)
 }
 
 type SliderService struct {
 	Repo SliderRepo
 }
 
-func (s SliderService) ReturnSlider() ([]structs.Slide, error) {
-	response, err := s.Repo.SelectSlider()
+func (s SliderService) ReturnSlider(ctx context.Context) ([]structs.Slide, error) {
+	response, err := s.Repo.SelectSlider(ctx)
 	if err != nil {
 		return []structs.Slide{}, fmt.Errorf("error happens while slider returning: %w", err)
 	}
@@ -60,6 +61,19 @@ func (s SliderService) SaveSlider(ctx context.Context, form *multipart.Form) err
 		}
 
 		return fmt.Errorf("error happens while inserting: %w", err)
+	}
+
+	return nil
+}
+
+func (s SliderService) DeleteSlideByID(ctx context.Context) error {
+	objectPath, err := s.Repo.DelSlideByID(ctx)
+	if err != nil {
+		return fmt.Errorf("error while delete slide: %w", err)
+	}
+
+	if err := os.Remove(objectPath); err != nil {
+		return fmt.Errorf("error happens while remove file: %w", err)
 	}
 
 	return nil

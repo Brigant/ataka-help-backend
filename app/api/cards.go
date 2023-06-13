@@ -60,7 +60,8 @@ func (h CardHandler) createCard(ctx *fiber.Ctx) error {
 
 	const (
 		limitNumberItemsFile = 1
-		limitAltItems        = 1
+		minAltItems          = 10
+		maxAltItems          = 30
 		minTitle             = 4
 		maxTitle             = 300
 		minDescription       = 3
@@ -88,7 +89,7 @@ func (h CardHandler) createCard(ctx *fiber.Ctx) error {
 		h.log.Debugw("createCard", "form.Vlaues", "required title more than 3 letters and less than 300")
 
 		return fiber.NewError(fiber.StatusBadRequest, "required title more than 3 letters and less than 300")
-	case form.Value["alt"] == nil || len(form.Value["alt"][0]) < limitAltItems:
+	case form.Value["alt"] == nil || len(form.Value["alt"][0]) < minAltItems || len(form.Value["alt"][0]) > maxAltItems:
 		h.log.Debugw("createCard", "form.Vlaues", "required alt")
 
 		return fiber.NewError(fiber.StatusBadRequest, "required alt")
