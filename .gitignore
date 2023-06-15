@@ -27,6 +27,7 @@ config.yaml
 
 # IDE files
 .vsconfig
+.vscode
 
 # Coverage files
 coverage.*
