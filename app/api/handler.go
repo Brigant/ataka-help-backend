@@ -6,8 +6,6 @@ import (
 	"github.com/baza-trainee/ataka-help-backend/app/logger"
 )
 
-var allowedContentType = []string{"image/jpg", "image/jpeg", "image/webp", "image/png"}
-
 const (
 	fileLimit     = 2 * 1024 * 1024
 	defaultLimit  = 6
