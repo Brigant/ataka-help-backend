@@ -420,7 +420,8 @@ paths:
                     type: array
                     items:
                       $ref: "#/components/schemas/Report"
-        "404": { $ref: "#/components/responses/NotFound" }
+        "204": { $ref: "#/components/responses/PartialContent" }
+        "500": { $ref: "#/components/responses/InternalError" }
 
     put: 
       tags:
@@ -876,6 +877,24 @@ components:
                 message:
                   type: string
                   example: not found error
+    PartialContent:
+        description: When nothing to return
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - code
+                - data
+              properties:
+                status:
+                  type: integer
+                  example: 206
+                data:
+                  type: array
+                  items:
+                    type: string
+
     NotAllowedMethot:
         description: A 405 error status code means "Method Not Allowed"
         content:

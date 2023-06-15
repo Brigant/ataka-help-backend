@@ -31,10 +31,10 @@ func (h ReportHandler) getReports(ctx *fiber.Ctx) error {
 	report, err := h.Service.ReturnReport()
 	if err != nil {
 		if errors.Is(err, structs.ErrNotFound) {
-			return fiber.NewError(fiber.StatusNotFound, err.Error())
+			return fiber.NewError(fiber.StatusNoContent)
 		}
 
-		return fiber.NewError(fiber.StatusNotFound, err.Error())
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
 	response := structs.ReportResponse{
