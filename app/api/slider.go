@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"mime/multipart"
-	"net/http"
 	"time"
 
 	"github.com/baza-trainee/ataka-help-backend/app/logger"
@@ -21,8 +20,8 @@ const (
 
 type SliderService interface {
 	ReturnSlider(context.Context) ([]structs.Slide, error)
-	SaveSlider(context.Context, *multipart.Form) error
-	DeleteSlideByID(context.Context) error
+	SaveSlider(context.Context, *multipart.Form, chan struct{}) error
+	DeleteSlideByID(context.Context, string) error
 }
 
 type Slider struct {
@@ -61,6 +60,10 @@ func (s Slider) getSlider(ctx *fiber.Ctx) error {
 
 func (s Slider) createSlider(ctx *fiber.Ctx) error {
 	allowedFileExtentions := []string{"jpg", "jpeg", "webp", "png"}
+
+	chErr := make(chan error)
+
+	chWell := make(chan struct{})
 
 	const (
 		minTitle = 4
@@ -112,17 +115,36 @@ func (s Slider) createSlider(ctx *fiber.Ctx) error {
 
 	ctxUser := ctx.UserContext()
 
-	ctxWithDeadline, cancel := context.WithDeadline(ctxUser, time.Now().Add(2*time.Second))
+	ctxWithDeadline, cancel := context.WithDeadline(ctxUser, time.Now().Add(1*time.Second))
 
 	defer cancel()
 
-	if err := s.Service.SaveSlider(ctxWithDeadline, form); err != nil {
-		s.log.Errorw("createSlider", "createSlider error", err.Error())
+	go func(chErr chan error, chWell chan struct{}) {
+		if err := s.Service.SaveSlider(ctxWithDeadline, form, chWell); err != nil {
+			s.log.Errorw("createSlider", "createSlider error", err.Error())
+
+			chErr <- err
+
+			close(chErr)
+		}
+	}(chErr, chWell)
+
+	/*
+		sync.WaitGroup had not added because select{} blocks main goroutine any way.
+	*/
+
+	select {
+	case <-chWell:
+		_ = <-chWell
+
+		return ctx.Status(fiber.StatusOK).JSON(structs.SetResponse(fiber.StatusOK, "success"))
+	case <-chErr:
+		err := <-chErr
 
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	case <-ctxWithDeadline.Done():
+		return ctx.Status(fiber.StatusRequestTimeout).JSON(structs.SetResponse(fiber.StatusRequestTimeout, fiber.ErrRequestTimeout.Message))
 	}
-
-	return ctx.JSON(structs.SetResponse(http.StatusOK, "success"))
 }
 
 func (s Slider) deleteSlide(ctx *fiber.Ctx) error {
@@ -141,13 +163,11 @@ func (s Slider) deleteSlide(ctx *fiber.Ctx) error {
 
 	ctxUser := ctx.UserContext()
 
-	ctxWithValue := context.WithValue(ctxUser, id, param.ID)
-
-	ctxWithDeadline, cancel := context.WithDeadline(ctxWithValue, time.Now().Add(2*time.Second))
+	ctxWithDeadline, cancel := context.WithDeadline(ctxUser, time.Now().Add(500*time.Millisecond))
 
 	defer cancel()
 
-	if err := s.Service.DeleteSlideByID(ctxWithDeadline); err != nil {
+	if err := s.Service.DeleteSlideByID(ctxWithDeadline, param.ID); err != nil {
 		if errors.Is(err, structs.ErrNoRowAffected) {
 			return fiber.NewError(fiber.StatusBadRequest, err.Error())
 		}

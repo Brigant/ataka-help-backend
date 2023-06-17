@@ -174,10 +174,12 @@ func (r Repo) SelectSlider(ctx context.Context) ([]structs.Slide, error) {
 
 	for rows.Next() {
 		record := structs.Slide{}
+
 		err := rows.StructScan(&record)
 		if err != nil {
 			return nil, fmt.Errorf("error in QueryxContext.Next(): %w", err)
 		}
+
 		records = append(records, record)
 	}
 
@@ -188,7 +190,7 @@ func (r Repo) SelectSlider(ctx context.Context) ([]structs.Slide, error) {
 	return records, nil
 }
 
-func (r Repo) InsertSlider(ctx context.Context, slider structs.Slide) error {
+func (r Repo) InsertSlider(ctx context.Context, slider structs.Slide, chWell chan struct{}) error {
 	query := `INSERT INTO slider (title, thumb, alt)
 			  VALUES($1, $2, $3);`
 
@@ -214,6 +216,10 @@ func (r Repo) InsertSlider(ctx context.Context, slider structs.Slide) error {
 	if effectedRows != expectedAffectedRow {
 		return structs.ErrNoRowAffected
 	}
+
+	chWell <- struct{}{}
+
+	close(chWell)
 
 	return nil
 }
@@ -254,20 +260,20 @@ func (r Repo) DelCardByID(ctx context.Context, id string) error {
 	return nil
 }
 
-func (r Repo) DelSlideByID(ctx context.Context) (string, error) {
+func (r Repo) DelSlideByID(ctx context.Context, ID string) (string, error) {
 	getQuery := `SELECT thumb FROM public.slider WHERE id = $1`
 
 	objectPath := struct {
 		Thumb string
 	}{}
 
-	if err := r.db.GetContext(ctx, &objectPath, getQuery, ctx.Value(id)); err != nil {
+	if err := r.db.GetContext(ctx, &objectPath, getQuery, ID); err != nil {
 		return "", fmt.Errorf("error in GetContext(): %w", err)
 	}
 
 	deleteQuery := `DELETE FROM public.slider WHERE id=$1`
 
-	sqlResult, err := r.db.ExecContext(ctx, deleteQuery, ctx.Value(id))
+	sqlResult, err := r.db.ExecContext(ctx, deleteQuery, ID)
 	if err != nil {
 		return "", fmt.Errorf("error in ExecContext(): %w", err)
 	}
