@@ -4,12 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
+	"github.com/baza-trainee/ataka-help-backend/app/api/midlware"
 	"github.com/baza-trainee/ataka-help-backend/app/config"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
+	"github.com/gofiber/fiber/v2/middleware/timeout"
 )
 
 const bodyLimit = 2 * 1024 * 1024
@@ -52,7 +55,7 @@ func NewServer(cfg config.Config, handler Handler) *Server {
 
 	server.HTTPServer.Use(recover.New())
 
-	server.initRoutes(server.HTTPServer, handler)
+	server.initRoutes(server.HTTPServer, handler, cfg)
 
 	return server
 }
@@ -61,7 +64,9 @@ func (s *Server) Shutdown(ctx context.Context) error {
 	return fmt.Errorf("shutdown error: %w", s.HTTPServer.ShutdownWithContext(ctx))
 }
 
-func (s Server) initRoutes(app *fiber.App, h Handler) {
+func (s Server) initRoutes(app *fiber.App, h Handler, cfg config.Config) {
+	identifyUser := midlware.NewUserIdentity(cfg.Auth)
+
 	app.Static("/static", "./static")
 
 	app.Get("/cards", h.Card.getCards)
@@ -83,6 +88,9 @@ func (s Server) initRoutes(app *fiber.App, h Handler) {
 
 	app.Post("/feedback", h.Feedback.sendFedback)
 
+	app.Post("/auth/login", timeout.NewWithContext(h.Auth.login, 2*time.Second))
+	app.Post("/auth/logout", identifyUser, timeout.NewWithContext(h.Auth.logout, 2*time.Second))
+	app.Post("/auth/refresh", identifyUser, h.Auth.refresh)
 }
 
 func corsConfig() cors.Config {

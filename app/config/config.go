@@ -33,10 +33,14 @@ type SMTP struct {
 }
 
 type Config struct {
-	Server          Server
-	DB              Postgres
-	SMTP            SMTP
-	LogLevel        string        `env:"LOG_LEVEL" envDefault:"INFO"`
+	Server   Server
+	DB       Postgres
+	Auth     AuthConfig
+	SMTP     SMTP
+	LogLevel string `env:"LOG_LEVEL" envDefault:"INFO"`
+}
+
+type AuthConfig struct {
 	Salt            string        `env:"APP_SALT,notEmpty"`
 	SigningKey      string        `env:"SIGNING_KEY,notEmpty"`
 	AccessTokenTTL  time.Duration `env:"ACCESS_TOKEN_TTL" envDefault:"15m"`

@@ -238,3 +238,47 @@ func (r Repo) DelCardByID(ctx context.Context, id string) error {
 
 	return nil
 }
+
+func (r Repo) FindEmailWithPasword(ctx context.Context, identity structs.IdentityData) (string, error) {
+	// Test for context canceling
+	// query2 := `SELECT pg_sleep(20)`
+	// select {
+	// case <-ctx.Done():
+	// 	return "", structs.ErrTimeout
+	// default:
+	// 	_, err := r.db.ExecContext(ctx, query2)
+	// 	if err != nil {
+	// 		pqErr := new(pq.Error)
+	// 		if errors.As(err, &pqErr) && pqErr.Code.Name() == "query_canceled" {
+	// 			return "", structs.ErrTimeout
+	// 		}
+
+	// 		return "", err
+	// 	}
+	// 	return "", nil
+	// }
+
+	var userID string
+
+	query := `SELECT id FROM public.users WHERE email=$1 and password=$2 `
+
+	select {
+	case <-ctx.Done():
+		return "", structs.ErrTimeout
+	default:
+		if err := r.db.GetContext(ctx, &userID, query, identity.Login, identity.Password); err != nil {
+			pqErr := new(pq.Error)
+			if errors.As(err, &pqErr) && pqErr.Code.Name() == "query_canceled" {
+				return "", structs.ErrTimeout
+			}
+
+			if errors.Is(err, sql.ErrNoRows) {
+				return "", structs.ErrNotFound
+			}
+
+			return "", fmt.Errorf("error while GetContext(): %w", err)
+		}
+
+		return userID, nil
+	}
+}
