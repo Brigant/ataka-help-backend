@@ -13,6 +13,7 @@ import (
 )
 
 const (
+	id                         = "id"
 	expectedAffectedRow        = 1
 	ErrCodeUniqueViolation     = "unique_violation"
 	ErrCodeNoData              = "no_data"
@@ -158,22 +159,38 @@ func (r Repo) SelectAllPartners() (string, error) {
 	return "some partners from db", nil
 }
 
-func (r Repo) SelectSlider() ([]structs.Slide, error) {
-	response := []structs.Slide{}
+func (r Repo) SelectSlider(ctx context.Context) ([]structs.Slide, error) {
+	records := []structs.Slide{}
 
 	query := `SELECT id, title, thumb, alt, created, modified 
 			  FROM public.slider AS sld
 			  ORDER BY sld.created DESC;`
 
-	err := r.db.Select(&response, query)
+	rows, err := r.db.QueryxContext(ctx, query)
 	if err != nil {
-		return []structs.Slide{}, fmt.Errorf("error happens while slider returning: %w", err)
+		return nil, fmt.Errorf("error in QueryxContext: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		record := structs.Slide{}
+
+		err := rows.StructScan(&record)
+		if err != nil {
+			return nil, fmt.Errorf("error in QueryxContext.Next(): %w", err)
+		}
+
+		records = append(records, record)
 	}
 
-	return response, nil
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error in QueryxContext.Err(): %w", err)
+	}
+
+	return records, nil
 }
 
-func (r Repo) InsertSlider(ctx context.Context, slider structs.Slide) error {
+func (r Repo) InsertSlider(ctx context.Context, slider structs.Slide, chWell chan struct{}) error {
 	query := `INSERT INTO slider (title, thumb, alt)
 			  VALUES($1, $2, $3);`
 
@@ -199,6 +216,10 @@ func (r Repo) InsertSlider(ctx context.Context, slider structs.Slide) error {
 	if effectedRows != expectedAffectedRow {
 		return structs.ErrNoRowAffected
 	}
+
+	chWell <- struct{}{}
+
+	close(chWell)
 
 	return nil
 }
@@ -237,6 +258,36 @@ func (r Repo) DelCardByID(ctx context.Context, id string) error {
 	}
 
 	return nil
+}
+
+func (r Repo) DelSlideByID(ctx context.Context, ID string) (string, error) {
+	getQuery := `SELECT thumb FROM public.slider WHERE id = $1`
+
+	objectPath := struct {
+		Thumb string
+	}{}
+
+	if err := r.db.GetContext(ctx, &objectPath, getQuery, ID); err != nil {
+		return "", fmt.Errorf("error in GetContext(): %w", err)
+	}
+
+	deleteQuery := `DELETE FROM public.slider WHERE id=$1`
+
+	sqlResult, err := r.db.ExecContext(ctx, deleteQuery, ID)
+	if err != nil {
+		return "", fmt.Errorf("error in ExecContext(): %w", err)
+	}
+
+	affectedRows, err := sqlResult.RowsAffected()
+	if err != nil {
+		return "", fmt.Errorf("the error is in RowsAffected: %w", err)
+	}
+
+	if affectedRows != expectedAffectedRow {
+		return "", structs.ErrNoRowAffected
+	}
+
+	return objectPath.Thumb, nil
 }
 
 func (r Repo) FindEmailWithPasword(ctx context.Context, identity structs.IdentityData) (string, error) {

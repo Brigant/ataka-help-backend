@@ -78,6 +78,7 @@ func (s Server) initRoutes(app *fiber.App, h Handler, cfg config.Config) {
 
 	app.Get("/slider", h.Slider.getSlider)
 	app.Post("/slider", h.Slider.createSlider)
+	app.Delete("/slider/:id", h.Slider.deleteSlide)
 
 	app.Put("/contacts", h.Contact.edit)
 	app.Get("/contacts", h.Contact.get)
