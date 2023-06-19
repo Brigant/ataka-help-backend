@@ -3,13 +3,21 @@ package structs
 import (
 	"crypto/sha256"
 	"fmt"
+	"time"
 
 	"github.com/golang-jwt/jwt"
 )
 
+const (
+	AccessCookieName  = "access-cookie"
+	RefreshCookieName = "refresh-cookie"
+)
+
 type TokenPair struct {
-	AccessToken  string `json:"access_token"`
-	RefreshToken string `json:"refresh_token"`
+	AccessToken   string `json:"access_token"`
+	AccessExpire  time.Time
+	RefreshToken  string `json:"refresh_token"`
+	RefresgExpire time.Time
 }
 
 type IdentityData struct {
@@ -27,3 +35,4 @@ func SHA256(password, salt string) string {
 
 	return fmt.Sprintf("%x", sum)
 }
+

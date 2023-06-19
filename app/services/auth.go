@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -21,12 +20,12 @@ type AuthService struct {
 
 var inMemory = make(map[string]string)
 
-func (s AuthService) GetTokenPair(ctx context.Context, identity structs.IdentityData, cfg config.AuthConfig) (string, time.Time, error) {
+func (s AuthService) GetTokenPair(ctx context.Context, identity structs.IdentityData, cfg config.AuthConfig) (structs.TokenPair, error) {
 	identity.Password = structs.SHA256(identity.Password, cfg.Salt)
 
 	userID, err := s.Repo.FindEmailWithPasword(ctx, identity)
 	if err != nil {
-		return "", time.Time{}, fmt.Errorf("error in FindEmailWithPasword: %w", err)
+		return structs.TokenPair{}, fmt.Errorf("error in FindEmailWithPasword: %w", err)
 	}
 
 	accessExpire := time.Now().Add(cfg.AccessTokenTTL)
@@ -34,27 +33,24 @@ func (s AuthService) GetTokenPair(ctx context.Context, identity structs.Identity
 
 	accessToken, err := generateJWT(accessExpire, cfg.SigningKey, userID)
 	if err != nil {
-		return "", time.Time{}, fmt.Errorf("error in generateJWT: %w", err)
+		return structs.TokenPair{}, fmt.Errorf("error in generateJWT: %w", err)
 	}
 
 	refreshToken, err := generateJWT(refreshExpire, cfg.SigningKey, userID)
 	if err != nil {
-		return "", time.Time{}, fmt.Errorf("error in generateJWT: %w", err)
+		return structs.TokenPair{}, fmt.Errorf("error in generateJWT: %w", err)
 	}
 
 	inMemory[refreshToken] = userID
 
 	tokenPair := structs.TokenPair{
-		AccessToken:  accessToken,
-		RefreshToken: refreshToken,
+		AccessToken:   accessToken,
+		AccessExpire:  accessExpire,
+		RefreshToken:  refreshToken,
+		RefresgExpire: refreshExpire,
 	}
 
-	byteResult, err := json.Marshal(tokenPair)
-	if err != nil {
-		return "", time.Time{}, fmt.Errorf("error in Marshal: %w", err)
-	}
-	fmt.Println(inMemory)
-	return string(byteResult), accessExpire, nil
+	return tokenPair, nil
 }
 
 func generateJWT(expire time.Time, signingKey, userID string) (string, error) {
@@ -82,10 +78,7 @@ func (s AuthService) CleanSession(userID string) {
 	}
 }
 
-func (s AuthService) Refresh(refreshString string, cfg config.AuthConfig) (string, time.Time, error) {
-	userID := inMemory["refreshString"]
-	
-
+func (s AuthService) Refresh(refreshString, userID string, cfg config.AuthConfig) (structs.TokenPair, error) {
 	delete(inMemory, refreshString)
 
 	accessExpire := time.Now().Add(cfg.AccessTokenTTL)
@@ -93,25 +86,22 @@ func (s AuthService) Refresh(refreshString string, cfg config.AuthConfig) (strin
 
 	accessToken, err := generateJWT(accessExpire, cfg.SigningKey, userID)
 	if err != nil {
-		return "", time.Time{}, fmt.Errorf("error in generateJWT: %w", err)
+		return structs.TokenPair{}, fmt.Errorf("error in generateJWT: %w", err)
 	}
 
 	refreshToken, err := generateJWT(refreshExpire, cfg.SigningKey, userID)
 	if err != nil {
-		return "", time.Time{}, fmt.Errorf("error in generateJWT: %w", err)
+		return structs.TokenPair{}, fmt.Errorf("error in generateJWT: %w", err)
 	}
 
 	inMemory[refreshToken] = userID
 
 	tokenPair := structs.TokenPair{
-		AccessToken:  accessToken,
-		RefreshToken: refreshToken,
+		AccessToken:   accessToken,
+		AccessExpire:  accessExpire,
+		RefreshToken:  refreshToken,
+		RefresgExpire: refreshExpire,
 	}
 
-	byteResult, err := json.Marshal(tokenPair)
-	if err != nil {
-		return "", time.Time{}, fmt.Errorf("error in Marshal: %w", err)
-	}
-	fmt.Println(inMemory)
-	return string(byteResult), accessExpire, nil
+	return tokenPair, nil
 }

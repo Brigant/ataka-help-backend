@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/baza-trainee/ataka-help-backend/app/api/midlware"
 	"github.com/baza-trainee/ataka-help-backend/app/config"
 	"github.com/baza-trainee/ataka-help-backend/app/logger"
 	"github.com/baza-trainee/ataka-help-backend/app/structs"
@@ -12,24 +13,22 @@ import (
 )
 
 type AutService interface {
-	GetTokenPair(context.Context, structs.IdentityData, config.AuthConfig) (string, time.Time, error)
-	CleanSession(userID string)
-	Refresh(refreshString string, cfg config.AuthConfig) (string, time.Time, error)
+	GetTokenPair(context.Context, structs.IdentityData, config.AuthConfig) (structs.TokenPair, error)
+	CleanSession(string)
+	Refresh(string, string, config.AuthConfig) (structs.TokenPair, error)
 }
 
 type AuthHandler struct {
-	Service    AutService
-	log        *logger.Logger
-	Auth       config.AuthConfig
-	CookieName string
+	Service AutService
+	log     *logger.Logger
+	Auth    config.AuthConfig
 }
 
 func NewAuthHandler(service AutService, log *logger.Logger, cfg config.AuthConfig) AuthHandler {
 	return AuthHandler{
-		Service:    service,
-		log:        log,
-		Auth:       cfg,
-		CookieName: "TokenPair",
+		Service: service,
+		log:     log,
+		Auth:    cfg,
 	}
 }
 
@@ -44,7 +43,7 @@ func (h AuthHandler) login(ctx *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, structs.ErrWrongBody.Error())
 	}
 
-	tokenPairJSON, expires, err := h.Service.GetTokenPair(ctx.UserContext(), identity, h.Auth)
+	tokenPair, err := h.Service.GetTokenPair(ctx.UserContext(), identity, h.Auth)
 	if err != nil {
 		if errors.Is(err, structs.ErrTimeout) {
 			return fiber.NewError(fiber.StatusRequestTimeout, err.Error())
@@ -57,51 +56,85 @@ func (h AuthHandler) login(ctx *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
-	cookie := new(fiber.Cookie)
-	cookie.Name = h.CookieName
-	cookie.Value = tokenPairJSON
-	cookie.Expires = expires
-	cookie.HTTPOnly = true
+	accessCookie := new(fiber.Cookie)
+	accessCookie.Name = structs.AccessCookieName
+	accessCookie.Value = tokenPair.AccessToken
+	accessCookie.Expires = tokenPair.AccessExpire
+	accessCookie.HTTPOnly = true
 	// cookie.Secure = true
 
-	ctx.Cookie(cookie)
+	ctx.Cookie(accessCookie)
 
-	return ctx.Status(fiber.StatusOK).JSON(identity)
+	refreshCookie := new(fiber.Cookie)
+	refreshCookie.Name = structs.RefreshCookieName
+	refreshCookie.Value = tokenPair.RefreshToken
+	refreshCookie.Expires = tokenPair.RefresgExpire
+	refreshCookie.HTTPOnly = true
+	// cookie.Secure = true
+
+	ctx.Cookie(refreshCookie)
+
+	return ctx.Status(fiber.StatusOK).JSON(structs.SetResponse(fiber.StatusOK, "logined"))
 }
 
 func (h AuthHandler) refresh(ctx *fiber.Ctx) error {
-	refreshToken := ctx.Locals("refreshString")
-	if refreshToken == nil || refreshToken == "" {
-		return fiber.NewError(fiber.StatusInternalServerError, "cann't find refreshString in context")
+	refreshString := ctx.Cookies(structs.RefreshCookieName)
+
+	if refreshString == "" {
+		return fiber.NewError(fiber.StatusUnauthorized, "empty cookie")
 	}
 
-	tokenPairJSON, expires, err := h.Service.Refresh(refreshToken.(string), h.Auth)
+	userID, err := midlware.ParseToken(refreshString, h.Auth.SigningKey)
+	if err != nil {
+		return fiber.NewError(fiber.StatusUnauthorized, err.Error())
+	}
+
+	tokenPair, err := h.Service.Refresh(refreshString, userID, h.Auth)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
-	cookie := new(fiber.Cookie)
-	cookie.Name = h.CookieName
-	cookie.Value = tokenPairJSON
-	cookie.Expires = expires
-	cookie.HTTPOnly = true
+	accessCookie := new(fiber.Cookie)
+	accessCookie.Name = structs.AccessCookieName
+	accessCookie.Value = tokenPair.AccessToken
+	accessCookie.Expires = tokenPair.AccessExpire
+	accessCookie.HTTPOnly = true
 	// cookie.Secure = true
 
-	ctx.Cookie(cookie)
+	ctx.Cookie(accessCookie)
 
-	return ctx.Status(fiber.StatusOK).JSON("refreshed")
+	refreshCookie := new(fiber.Cookie)
+	refreshCookie.Name = structs.RefreshCookieName
+	refreshCookie.Value = tokenPair.RefreshToken
+	refreshCookie.Expires = tokenPair.RefresgExpire
+	refreshCookie.HTTPOnly = true
+	// cookie.Secure = true
+
+	ctx.Cookie(refreshCookie)
+
+	return ctx.Status(fiber.StatusOK).JSON(structs.SetResponse(fiber.StatusOK, "refreshed"))
 }
 
 func (h AuthHandler) logout(ctx *fiber.Ctx) error {
-	cookie := new(fiber.Cookie)
-	cookie.Name = h.CookieName
-	cookie.Value = ""
-	cookie.Expires = time.Now().Add(-1)
-	cookie.HTTPOnly = true
+	userID := ctx.Locals("userID")
+
+	accesCookie := new(fiber.Cookie)
+	accesCookie.Name = structs.AccessCookieName
+	accesCookie.Value = ""
+	accesCookie.Expires = time.Now().Add(-1)
+	accesCookie.HTTPOnly = true
 	// cookie.Secure = true
 
-	// TODO: remove refresh token from memory
+	refreshCookie := new(fiber.Cookie)
+	refreshCookie.Name = structs.RefreshCookieName
+	refreshCookie.Value = ""
+	refreshCookie.Expires = time.Now().Add(-1)
+	refreshCookie.HTTPOnly = true
+	// cookie.Secure = true
 
-	ctx.Cookie(cookie)
-	return ctx.Status(fiber.StatusOK).JSON("ok")
+	h.Service.CleanSession(userID.(string))
+
+	ctx.Cookie(accesCookie)
+	ctx.Cookie(refreshCookie)
+	return ctx.Status(fiber.StatusOK).JSON(structs.SetResponse(fiber.StatusOK, "success"))
 }

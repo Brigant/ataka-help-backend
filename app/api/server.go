@@ -91,7 +91,7 @@ func (s Server) initRoutes(app *fiber.App, h Handler, cfg config.Config) {
 
 	app.Post("/auth/login", timeout.NewWithContext(h.Auth.login, 2*time.Second))
 	app.Post("/auth/logout", identifyUser, timeout.NewWithContext(h.Auth.logout, 2*time.Second))
-	app.Post("/auth/refresh", identifyUser, h.Auth.refresh)
+	app.Post("/auth/refresh", h.Auth.refresh)
 }
 
 func corsConfig() cors.Config {

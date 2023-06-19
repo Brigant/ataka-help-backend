@@ -1,7 +1,6 @@
 package midlware
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/baza-trainee/ataka-help-backend/app/config"
@@ -12,31 +11,25 @@ import (
 
 func NewUserIdentity(cfg config.AuthConfig) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
-		tokenString := ctx.Cookies("TokenPair")
+		accessString := ctx.Cookies(structs.AccessCookieName)
 
-		if tokenString == "" {
-			return fiber.NewError(fiber.StatusUnauthorized, "empty cooki")
+		if accessString == "" {
+			return fiber.NewError(fiber.StatusUnauthorized, "empty cookie")
 		}
 
-		tokenPair := structs.TokenPair{}
-
-		if err := json.Unmarshal([]byte(tokenString), &tokenPair); err != nil {
-			return fiber.NewError(fiber.StatusUnauthorized, err.Error())
-		}
-
-		userID, err := parseToken(tokenPair.AccessToken, cfg.SigningKey)
+		userID, err := ParseToken(accessString, cfg.SigningKey)
 		if err != nil {
 			return fiber.NewError(fiber.StatusUnauthorized, err.Error())
 		}
 
 		ctx.Locals("userID", userID)
-		ctx.Locals("refreshString", tokenPair.RefreshToken)
+		ctx.Locals("refreshString", accessString)
 
 		return ctx.Next()
 	}
 }
 
-func parseToken(tokenString, signingKey string) (string, error) {
+func ParseToken(tokenString, signingKey string) (string, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &structs.Claims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, structs.ErrInvalidSigningMethod
