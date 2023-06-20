@@ -12,7 +12,7 @@ import (
 
 type PartnersRepo interface {
 	SelectAllPartners(context.Context, structs.PartnerQueryParameters) ([]structs.Partner, error)
-	InsertPartner(context.Context, structs.Partner) error
+	InsertPartner(context.Context, structs.Partner, chan struct{}) error
 	DelPartnerByID(context.Context, string) (string, error)
 	CountRowsTable(context.Context, string) (int, error)
 }
@@ -35,7 +35,7 @@ func (s PartnersService) ReturnPartners(ctx context.Context, params structs.Part
 	return partners, total, nil
 }
 
-func (p PartnersService) SavePartner(ctx context.Context, form *multipart.Form) error {
+func (p PartnersService) SavePartner(ctx context.Context, form *multipart.Form, chWell chan struct{}) error {
 	file := form.File["logo"][0]
 
 	partner := structs.Partner{
@@ -60,7 +60,7 @@ func (p PartnersService) SavePartner(ctx context.Context, form *multipart.Form) 
 		return fmt.Errorf(" written bytes: %v, error happens while io.Copy(): %w", written, err)
 	}
 
-	if err := p.Repo.InsertPartner(ctx, partner); err != nil {
+	if err := p.Repo.InsertPartner(ctx, partner, chWell); err != nil {
 		if err := os.Remove(partner.Logo); err != nil {
 			return fmt.Errorf("error happens while remove file: %w", err)
 		}
@@ -71,7 +71,7 @@ func (p PartnersService) SavePartner(ctx context.Context, form *multipart.Form) 
 	return nil
 }
 
-func (p PartnersService) DeletePartnerByID(ctx context.Context, ID string) error {
+func (p PartnersService) DeletePartnerByID(ctx context.Context, ID string, chWell chan struct{}) error {
 	objectPath, err := p.Repo.DelPartnerByID(ctx, ID)
 	if err != nil {
 		return fmt.Errorf("error while delete partner: %w", err)
@@ -80,6 +80,10 @@ func (p PartnersService) DeletePartnerByID(ctx context.Context, ID string) error
 	if err := os.Remove(objectPath); err != nil {
 		return fmt.Errorf("error happens while remove file: %w", err)
 	}
+
+	chWell <- struct{}{}
+
+	close(chWell)
 
 	return nil
 }

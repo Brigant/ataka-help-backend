@@ -174,9 +174,7 @@ func (r Repo) SelectAllPartners(ctx context.Context, params structs.PartnerQuery
 	for rows.Next() {
 		partner := structs.Partner{}
 
-		if err := rows.Scan(
-			&partner.ID, &partner.Alt, &partner.Logo,
-			&partner.Created, &partner.Modified); err != nil {
+		if err := rows.Scan(&partner.ID, &partner.Alt, &partner.Logo, &partner.Created, &partner.Modified); err != nil {
 			return nil, fmt.Errorf("an error occurs while rows.Scan(): %w", err)
 		}
 
@@ -190,7 +188,7 @@ func (r Repo) SelectAllPartners(ctx context.Context, params structs.PartnerQuery
 	return partners, nil
 }
 
-func (r Repo) InsertPartner(ctx context.Context, partner structs.Partner) error {
+func (r Repo) InsertPartner(ctx context.Context, partner structs.Partner, chWell chan struct{}) error {
 	query := `INSERT INTO public.partners (alt, logo)
 			  VALUES($1, $2);`
 
@@ -217,37 +215,11 @@ func (r Repo) InsertPartner(ctx context.Context, partner structs.Partner) error 
 		return structs.ErrNoRowAffected
 	}
 
+	chWell <- struct{}{}
+
+	close(chWell)
+
 	return nil
-}
-
-func (r Repo) DelPartnerByID(ctx context.Context, ID string) (string, error) {
-	getQuery := `SELECT logo FROM public.partners WHERE id = $1`
-
-	objectPath := struct {
-		Logo string
-	}{}
-
-	if err := r.db.GetContext(ctx, &objectPath, getQuery, ID); err != nil {
-		return "", fmt.Errorf("error in GetContext(): %w", err)
-	}
-
-	deleteQuery := `DELETE FROM public.partners WHERE id=$1`
-
-	sqlResult, err := r.db.ExecContext(ctx, deleteQuery, ID)
-	if err != nil {
-		return "", fmt.Errorf("error in ExecContext(): %w", err)
-	}
-
-	affectedRows, err := sqlResult.RowsAffected()
-	if err != nil {
-		return "", fmt.Errorf("the error is in RowsAffected: %w", err)
-	}
-
-	if affectedRows != expectedAffectedRow {
-		return "", structs.ErrNoRowAffected
-	}
-
-	return objectPath.Logo, nil
 }
 
 func (r Repo) SelectSlider(ctx context.Context) ([]structs.Slide, error) {
@@ -375,4 +347,34 @@ func (r Repo) DelSlideByID(ctx context.Context) (string, error) {
 	}
 
 	return objectPath.Thumb, nil
+}
+
+func (r Repo) DelPartnerByID(ctx context.Context, ID string) (string, error) {
+	getQuery := `SELECT logo FROM public.partners WHERE id = $1`
+
+	objectPath := struct {
+		Logo string `db:"logo"`
+	}{}
+
+	if err := r.db.GetContext(ctx, &objectPath, getQuery, ID); err != nil {
+		return "", fmt.Errorf("error in GetContext(): %w", err)
+	}
+
+	deleteQuery := `DELETE FROM public.partners WHERE id=$1`
+
+	sqlResult, err := r.db.ExecContext(ctx, deleteQuery, ID)
+	if err != nil {
+		return "", fmt.Errorf("error in ExecContext(): %w", err)
+	}
+
+	affectedRows, err := sqlResult.RowsAffected()
+	if err != nil {
+		return "", fmt.Errorf("the error is in RowsAffected: %w", err)
+	}
+
+	if affectedRows != expectedAffectedRow {
+		return "", structs.ErrNoRowAffected
+	}
+
+	return objectPath.Logo, nil
 }

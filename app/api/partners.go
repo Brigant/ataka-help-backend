@@ -15,8 +15,8 @@ import (
 
 type PartnerService interface {
 	ReturnPartners(context.Context, structs.PartnerQueryParameters) ([]structs.Partner, int, error)
-	SavePartner(context.Context, *multipart.Form) error
-	DeletePartnerByID(context.Context, string) error
+	SavePartner(context.Context, *multipart.Form, chan struct{}) error
+	DeletePartnerByID(context.Context, string, chan struct{}) error
 }
 
 type Partner struct {
@@ -32,6 +32,10 @@ func NewParnerHandler(service PartnerService, log *logger.Logger) Partner {
 }
 
 func (p Partner) getPartners(ctx *fiber.Ctx) error {
+	chErr := make(chan error)
+
+	chWell := make(chan structs.PartnerResponse)
+
 	params := structs.PartnerQueryParameters{
 		Limit:  defaultLimit,
 		Offset: defaultOffset,
@@ -43,22 +47,44 @@ func (p Partner) getPartners(ctx *fiber.Ctx) error {
 
 	ctxUser := ctx.UserContext()
 
-	ctxWithDeadline, cancel := context.WithDeadline(ctxUser, time.Now().Add(2*time.Second))
+	ctxWithDeadline, cancel := context.WithDeadline(ctxUser, time.Now().Add(1*time.Second))
 
 	defer cancel()
 
-	partners, total, err := p.Service.ReturnPartners(ctxWithDeadline, params)
-	if err != nil && !errors.Is(err, structs.ErrNotFound) {
+	go func(chErr chan error, chWell chan structs.PartnerResponse) {
+		partners, total, err := p.Service.ReturnPartners(ctxWithDeadline, params)
+		if err != nil && !errors.Is(err, structs.ErrNotFound) {
+			p.log.Errorw("getPartner", "getPartner error", err.Error())
+
+			chErr <- err
+
+			close(chErr)
+		}
+
+		response := structs.PartnerResponse{
+			Code:     fiber.StatusOK,
+			Total:    total,
+			Partners: partners,
+		}
+
+		chWell <- response
+
+		close(chWell)
+
+	}(chErr, chWell)
+
+	/*
+		sync.WaitGroup had not added because select{} blocks main goroutine any way.
+	*/
+
+	select {
+	case response := <-chWell:
+		return ctx.Status(fiber.StatusOK).JSON(response)
+	case err := <-chErr:
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	case <-ctxWithDeadline.Done():
+		return ctx.Status(fiber.StatusRequestTimeout).JSON(structs.SetResponse(fiber.StatusRequestTimeout, fiber.ErrRequestTimeout.Message))
 	}
-
-	response := structs.PartnerResponse{
-		Code:     fiber.StatusOK,
-		Total:    total,
-		Partners: partners,
-	}
-
-	return ctx.Status(fiber.StatusOK).JSON(response)
 }
 
 func (p Partner) createPartner(ctx *fiber.Ctx) error {
@@ -68,6 +94,10 @@ func (p Partner) createPartner(ctx *fiber.Ctx) error {
 		minAlt = 10
 		maxAlt = 30
 	)
+
+	chErr := make(chan error)
+
+	chWell := make(chan struct{})
 
 	form, err := ctx.MultipartForm()
 	if err != nil {
@@ -104,20 +134,39 @@ func (p Partner) createPartner(ctx *fiber.Ctx) error {
 
 	ctxUser := ctx.UserContext()
 
-	ctxWithDeadline, cancel := context.WithDeadline(ctxUser, time.Now().Add(2*time.Second))
+	ctxWithDeadline, cancel := context.WithDeadline(ctxUser, time.Now().Add(1*time.Second))
 
 	defer cancel()
 
-	if err := p.Service.SavePartner(ctxWithDeadline, form); err != nil {
-		p.log.Errorw("createPartner", "createPartner error", err.Error())
+	go func(chErr chan error, chWell chan struct{}) {
+		if err := p.Service.SavePartner(ctxWithDeadline, form, chWell); err != nil {
+			p.log.Errorw("createPartner", "createPartner error", err.Error())
 
+			chErr <- err
+
+			close(chErr)
+		}
+	}(chErr, chWell)
+
+	/*
+		sync.WaitGroup had not added because select{} blocks main goroutine any way.
+	*/
+
+	select {
+	case _ = <-chWell:
+		return ctx.JSON(structs.SetResponse(http.StatusOK, "success"))
+	case err := <-chErr:
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	case <-ctxWithDeadline.Done():
+		return ctx.Status(fiber.StatusRequestTimeout).JSON(structs.SetResponse(fiber.StatusRequestTimeout, fiber.ErrRequestTimeout.Message))
 	}
-
-	return ctx.JSON(structs.SetResponse(http.StatusOK, "success"))
 }
 
 func (p Partner) deletePartner(ctx *fiber.Ctx) error {
+	chErr := make(chan error)
+
+	chWell := make(chan struct{})
+
 	param := struct {
 		ID string `params:"id"`
 	}{}
@@ -133,17 +182,34 @@ func (p Partner) deletePartner(ctx *fiber.Ctx) error {
 
 	ctxUser := ctx.UserContext()
 
-	ctxWithDeadline, cancel := context.WithDeadline(ctxUser, time.Now().Add(2*time.Second))
+	ctxWithDeadline, cancel := context.WithDeadline(ctxUser, time.Now().Add(1*time.Second))
 
 	defer cancel()
 
-	if err := p.Service.DeletePartnerByID(ctxWithDeadline, param.ID); err != nil {
+	go func(chErr chan error, chWell chan struct{}) {
+		if err := p.Service.DeletePartnerByID(ctxWithDeadline, param.ID, chWell); err != nil {
+			p.log.Errorw("deletePartner", "deletePartner error", err.Error())
+
+			chErr <- err
+
+			close(chErr)
+		}
+	}(chErr, chWell)
+
+	/*
+		sync.WaitGroup had not added because select{} blocks main goroutine any way.
+	*/
+
+	select {
+	case _ = <-chWell:
+		return ctx.Status(fiber.StatusOK).JSON(structs.SetResponse(fiber.StatusOK, "success"))
+	case err := <-chErr:
 		if errors.Is(err, structs.ErrNoRowAffected) {
 			return fiber.NewError(fiber.StatusBadRequest, err.Error())
 		}
 
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	case <-ctxWithDeadline.Done():
+		return ctx.Status(fiber.StatusRequestTimeout).JSON(structs.SetResponse(fiber.StatusRequestTimeout, fiber.ErrRequestTimeout.Message))
 	}
-
-	return ctx.Status(fiber.StatusOK).JSON(structs.SetResponse(fiber.StatusOK, "success"))
 }
