@@ -4,6 +4,7 @@ import (
 	"context"
 	"mime/multipart"
 	"net/http"
+	"time"
 
 	"github.com/baza-trainee/ataka-help-backend/app/logger"
 	"github.com/baza-trainee/ataka-help-backend/app/structs"
@@ -15,7 +16,7 @@ const (
 )
 
 type SliderService interface {
-	ReturnSlider() ([]structs.Slide, error)
+	ReturnSlider(context.Context) ([]structs.Slide, error)
 	SaveSlider(context.Context, *multipart.Form) error
 }
 
@@ -32,7 +33,13 @@ func NewSliderHandler(service SliderService, log *logger.Logger) Slider {
 }
 
 func (s Slider) getSlider(ctx *fiber.Ctx) error {
-	response, err := s.Service.ReturnSlider()
+	ctxUser := ctx.UserContext()
+
+	ctxWithDeadline, cancel := context.WithDeadline(ctxUser, time.Now().Add(2*time.Second))
+
+	defer cancel()
+
+	response, err := s.Service.ReturnSlider(ctxWithDeadline)
 	if err != nil {
 		s.log.Errorw("getSlider", "getSlider error", err.Error())
 

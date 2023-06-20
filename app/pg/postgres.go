@@ -13,6 +13,7 @@ import (
 )
 
 const (
+	id                         = "id"
 	expectedAffectedRow        = 1
 	ErrCodeUniqueViolation     = "unique_violation"
 	ErrCodeNoData              = "no_data"
@@ -154,27 +155,134 @@ func (r Repo) CountRowsTable(ctx context.Context, table string) (int, error) {
 	return total, nil
 }
 
-func (r Repo) SelectAllPartners() (string, error) {
-	return "some partners from db", nil
+func (r Repo) SelectAllPartners(ctx context.Context, params structs.PartnerQueryParameters) ([]structs.Partner, error) {
+	query := `SELECT id, alt, logo, created, modified
+			  FROM public.partners as p
+			  ORDER BY p.created DESC
+			  Limit $1
+			  OFFSET $2;`
+
+	partners := []structs.Partner{}
+
+	rows, err := r.db.QueryContext(ctx, query, params.Limit, params.Offset)
+	if err != nil {
+		return nil, fmt.Errorf("an error occurs while QueryContext: %w", err)
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		partner := structs.Partner{}
+
+		if err := rows.Scan(
+			&partner.ID, &partner.Alt, &partner.Logo,
+			&partner.Created, &partner.Modified); err != nil {
+			return nil, fmt.Errorf("an error occurs while rows.Scan(): %w", err)
+		}
+
+		partners = append(partners, partner)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("an error occurs while rows.Err(): %w", err)
+	}
+
+	return partners, nil
 }
 
-func (r Repo) SelectSlider() ([]structs.Slide, error) {
-	response := []structs.Slide{}
+func (r Repo) InsertPartner(ctx context.Context, partner structs.Partner) error {
+	query := `INSERT INTO public.partners (alt, logo)
+			  VALUES($1, $2);`
+
+	result, err := r.db.ExecContext(ctx, query, partner.Alt, partner.Logo)
+	if err != nil {
+		pqError := new(pq.Error)
+		if errors.As(err, &pqError) && pqError.Code.Name() == ErrCodeForeignKeyViolation {
+			return structs.ErrForeignViolation
+		}
+
+		if errors.As(err, &pqError) && pqError.Code.Name() == ErrCodeUniqueViolation {
+			return structs.ErrUniqueRestriction
+		}
+
+		return fmt.Errorf("error in ExecContext: %w", err)
+	}
+
+	affectedRows, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("the error is in RowsAffected: %w", err)
+	}
+
+	if affectedRows != expectedAffectedRow {
+		return structs.ErrNoRowAffected
+	}
+
+	return nil
+}
+
+func (r Repo) DelPartnerByID(ctx context.Context, ID string) (string, error) {
+	getQuery := `SELECT logo FROM public.partners WHERE id = $1`
+
+	objectPath := struct {
+		Logo string
+	}{}
+
+	if err := r.db.GetContext(ctx, &objectPath, getQuery, ID); err != nil {
+		return "", fmt.Errorf("error in GetContext(): %w", err)
+	}
+
+	deleteQuery := `DELETE FROM public.partners WHERE id=$1`
+
+	sqlResult, err := r.db.ExecContext(ctx, deleteQuery, ID)
+	if err != nil {
+		return "", fmt.Errorf("error in ExecContext(): %w", err)
+	}
+
+	affectedRows, err := sqlResult.RowsAffected()
+	if err != nil {
+		return "", fmt.Errorf("the error is in RowsAffected: %w", err)
+	}
+
+	if affectedRows != expectedAffectedRow {
+		return "", structs.ErrNoRowAffected
+	}
+
+	return objectPath.Logo, nil
+}
+
+func (r Repo) SelectSlider(ctx context.Context) ([]structs.Slide, error) {
+	records := []structs.Slide{}
 
 	query := `SELECT id, title, thumb, alt, created, modified 
 			  FROM public.slider AS sld
 			  ORDER BY sld.created DESC;`
 
-	err := r.db.Select(&response, query)
+	rows, err := r.db.QueryxContext(ctx, query)
 	if err != nil {
-		return []structs.Slide{}, fmt.Errorf("error happens while slider returning: %w", err)
+		return nil, fmt.Errorf("error in QueryxContext: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		record := structs.Slide{}
+
+		err := rows.StructScan(&record)
+		if err != nil {
+			return nil, fmt.Errorf("error in QueryxContext.Next(): %w", err)
+		}
+
+		records = append(records, record)
 	}
 
-	return response, nil
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error in QueryxContext.Err(): %w", err)
+	}
+
+	return records, nil
 }
 
 func (r Repo) InsertSlider(ctx context.Context, slider structs.Slide) error {
-	query := `INSERT INTO slider (title, thumb, alt)
+	query := `INSERT INTO public.slider (title, thumb, alt)
 			  VALUES($1, $2, $3);`
 
 	result, err := r.db.ExecContext(ctx, query, slider.Title, slider.Thumb, slider.Alt)
@@ -191,12 +299,12 @@ func (r Repo) InsertSlider(ctx context.Context, slider structs.Slide) error {
 		return fmt.Errorf("error in ExecContext: %w", err)
 	}
 
-	effectedRows, err := result.RowsAffected()
+	affectedRows, err := result.RowsAffected()
 	if err != nil {
 		return fmt.Errorf("the error is in RowsAffected: %w", err)
 	}
 
-	if effectedRows != expectedAffectedRow {
+	if affectedRows != expectedAffectedRow {
 		return structs.ErrNoRowAffected
 	}
 
@@ -237,4 +345,34 @@ func (r Repo) DelCardByID(ctx context.Context, id string) error {
 	}
 
 	return nil
+}
+
+func (r Repo) DelSlideByID(ctx context.Context) (string, error) {
+	getQuery := `SELECT thumb FROM public.slider WHERE id = $1`
+
+	objectPath := struct {
+		Thumb string
+	}{}
+
+	if err := r.db.GetContext(ctx, &objectPath, getQuery, ctx.Value(id)); err != nil {
+		return "", fmt.Errorf("error in GetContext(): %w", err)
+	}
+
+	deleteQuery := `DELETE FROM public.slider WHERE id=$1`
+
+	sqlResult, err := r.db.ExecContext(ctx, deleteQuery, ctx.Value(id))
+	if err != nil {
+		return "", fmt.Errorf("error in ExecContext(): %w", err)
+	}
+
+	affectedRows, err := sqlResult.RowsAffected()
+	if err != nil {
+		return "", fmt.Errorf("the error is in RowsAffected: %w", err)
+	}
+
+	if affectedRows != expectedAffectedRow {
+		return "", structs.ErrNoRowAffected
+	}
+
+	return objectPath.Thumb, nil
 }

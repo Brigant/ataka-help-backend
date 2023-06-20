@@ -67,9 +67,11 @@ func (s Server) initRoutes(app *fiber.App, h Handler) {
 	app.Get("/cards", h.Card.getCards)
 	app.Post("/cards", h.Card.createCard)
 	app.Get("/cards/:id", h.Card.findCard)
-	app.Delete("cards/:id", h.Card.deleteCard)
+	app.Delete("/cards/:id", h.Card.deleteCard)
 
-	app.Get("/partners", h.Partner.get)
+	app.Get("/partners", h.Partner.getPartners)
+	app.Post("/partners", h.Partner.createPartner)
+	app.Delete("/partners/:id", h.Partner.deletePartner)
 
 	app.Get("/slider", h.Slider.getSlider)
 	app.Post("/slider", h.Slider.createSlider)

@@ -11,7 +11,7 @@ import (
 )
 
 type SliderRepo interface {
-	SelectSlider() ([]structs.Slide, error)
+	SelectSlider(context.Context) ([]structs.Slide, error)
 	InsertSlider(context.Context, structs.Slide) error
 }
 
@@ -19,8 +19,8 @@ type SliderService struct {
 	Repo SliderRepo
 }
 
-func (s SliderService) ReturnSlider() ([]structs.Slide, error) {
-	response, err := s.Repo.SelectSlider()
+func (s SliderService) ReturnSlider(ctx context.Context) ([]structs.Slide, error) {
+	response, err := s.Repo.SelectSlider(ctx)
 	if err != nil {
 		return []structs.Slide{}, fmt.Errorf("error happens while slider returning: %w", err)
 	}
