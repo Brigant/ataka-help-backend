@@ -66,7 +66,7 @@ func (s SliderService) SaveSlider(ctx context.Context, form *multipart.Form, chW
 	return nil
 }
 
-func (s SliderService) DeleteSlideByID(ctx context.Context, ID string) error {
+func (s SliderService) DeleteSlideByID(ctx context.Context, ID string, chWell chan struct{}) error {
 	objectPath, err := s.Repo.DelSlideByID(ctx, ID)
 	if err != nil {
 		return fmt.Errorf("error while delete slide: %w", err)
@@ -75,6 +75,10 @@ func (s SliderService) DeleteSlideByID(ctx context.Context, ID string) error {
 	if err := os.Remove(objectPath); err != nil {
 		return fmt.Errorf("error happens while remove file: %w", err)
 	}
+
+	chWell <- struct{}{}
+
+	close(chWell)
 
 	return nil
 }
