@@ -31,10 +31,10 @@ func (h ReportHandler) getReports(ctx *fiber.Ctx) error {
 	report, err := h.Service.ReturnReport()
 	if err != nil {
 		if errors.Is(err, structs.ErrNotFound) {
-			return fiber.NewError(fiber.StatusNotFound, err.Error())
+			return fiber.NewError(fiber.StatusNoContent)
 		}
 
-		return fiber.NewError(fiber.StatusNotFound, err.Error())
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
 	response := structs.ReportResponse{
@@ -64,7 +64,7 @@ func (h ReportHandler) updateReport(ctx *fiber.Ctx) error {
 
 	fileHeader := form.File["thumb"][0]
 
-	if fileHeader == nil || fileHeader.Size > fileLimit || !isAllowedFileExtention(allowedExtentions, fileHeader.Filename) {
+	if fileHeader == nil || fileHeader.Size > fileLimit {
 		h.log.Debugw("updateReport", "form.File", "required file not bigger then 5 Mb and in pdf format")
 
 		return fiber.NewError(fiber.StatusBadRequest, "required file not bigger then 2 Mb and in pdf format")
