@@ -156,33 +156,50 @@ func (r Repo) CountRowsTable(ctx context.Context, table string) (int, error) {
 }
 
 func (r Repo) SelectAllPartners(ctx context.Context, params structs.PartnerQueryParameters) ([]structs.Partner, error) {
-	query := `SELECT id, alt, logo, created, modified
-			  FROM public.partners as p
-			  ORDER BY p.created DESC
-			  Limit $1
-			  OFFSET $2;`
+	var resultRows *sql.Rows
 
 	partners := []structs.Partner{}
 
-	rows, err := r.db.QueryContext(ctx, query, params.Limit, params.Offset)
-	if err != nil {
-		return nil, fmt.Errorf("an error occurs while QueryContext: %w", err)
+	if params.Limit > 0 && params.Offset >= 0 {
+		query := `SELECT id, alt, logo, created, modified
+				  FROM public.partners as p
+				  ORDER BY p.created DESC
+				  Limit $1
+				  OFFSET $2;`
+
+		rows, err := r.db.QueryContext(ctx, query, params.Limit, params.Offset)
+		if err != nil {
+			return nil, fmt.Errorf("an error occurs while QueryContext: %w", err)
+		}
+
+		resultRows = rows
+	} else {
+		query := `SELECT id, alt, logo, created, modified
+				  FROM public.partners as p
+				  ORDER BY p.created DESC;`
+
+		rows, err := r.db.QueryContext(ctx, query)
+		if err != nil {
+			return nil, fmt.Errorf("an error occurs while QueryContext: %w", err)
+		}
+
+		resultRows = rows
 	}
 
-	defer rows.Close()
+	defer resultRows.Close()
 
-	for rows.Next() {
+	for resultRows.Next() {
 		partner := structs.Partner{}
 
-		if err := rows.Scan(&partner.ID, &partner.Alt, &partner.Logo, &partner.Created, &partner.Modified); err != nil {
-			return nil, fmt.Errorf("an error occurs while rows.Scan(): %w", err)
+		if err := resultRows.Scan(&partner.ID, &partner.Alt, &partner.Logo, &partner.Created, &partner.Modified); err != nil {
+			return nil, fmt.Errorf("an error occurs while resultRows.Scan(): %w", err)
 		}
 
 		partners = append(partners, partner)
 	}
 
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("an error occurs while rows.Err(): %w", err)
+	if err := resultRows.Err(); err != nil {
+		return nil, fmt.Errorf("an error occurs while resultRows.Err(): %w", err)
 	}
 
 	return partners, nil

@@ -106,7 +106,7 @@ func (p Partner) createPartner(ctx *fiber.Ctx) error {
 
 	alt := form.Value["alt"]
 
-	if alt == nil || len(form.Value["alt"][0]) < minAlt || len(form.Value["alt"][0]) > maxAlt {
+	if alt == nil || symbolsCounter(form.Value["alt"][0]) < minAlt || symbolsCounter(form.Value["alt"][0]) > maxAlt {
 		p.log.Debugw("createPartner", "form.Value alt", "alt is blank or out of limits")
 
 		return fiber.NewError(fiber.StatusBadRequest, "alt is blank or out of limits")
