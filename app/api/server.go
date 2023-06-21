@@ -70,22 +70,22 @@ func (s Server) initRoutes(app *fiber.App, h Handler, cfg config.Config) {
 	app.Static("/static", "./static")
 
 	app.Get("/cards", h.Card.getCards)
-	app.Post("/cards", h.Card.createCard)
+	app.Post("/cards", identifyUser, h.Card.createCard)
 	app.Get("/cards/:id", h.Card.findCard)
-	app.Delete("/cards/:id", h.Card.deleteCard)
+	app.Delete("/cards/:id", identifyUser, h.Card.deleteCard)
 
 	app.Get("/partners", h.Partner.get)
 
 	app.Get("/slider", h.Slider.getSlider)
-	app.Post("/slider", h.Slider.createSlider)
-	app.Delete("/slider/:id", h.Slider.deleteSlide)
+	app.Post("/slider", identifyUser, h.Slider.createSlider)
+	app.Delete("/slider/:id", identifyUser, h.Slider.deleteSlide)
 
-	app.Put("/contacts", h.Contact.edit)
+	app.Put("/contacts", identifyUser, h.Contact.edit)
 	app.Get("/contacts", h.Contact.get)
 
 	app.Get("/reports", h.Report.getReports)
-	app.Put("/reports", h.Report.updateReport)
-	app.Delete("/reports", h.Report.deleteReport)
+	app.Put("/reports", identifyUser, h.Report.updateReport)
+	app.Delete("/reports", identifyUser, h.Report.deleteReport)
 
 	app.Post("/feedback", h.Feedback.sendFedback)
 
@@ -102,3 +102,4 @@ func corsConfig() cors.Config {
 		AllowMethods: "GET, POST, PUT, DELETE",
 	}
 }
+
