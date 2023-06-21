@@ -74,7 +74,8 @@ func (s Server) initRoutes(app *fiber.App, h Handler) {
 	app.Delete("/partners/:id", h.Partner.deletePartner)
 
 	app.Get("/slider", h.Slider.getSlider)
-	app.Post("/slider", h.Slider.createSlider)
+	app.Post("/slider", h.Slider.createSlide)
+	app.Delete("/slider/:id", h.Slider.deleteSlide)
 
 	app.Put("/contacts", h.Contact.edit)
 	app.Get("/contacts", h.Contact.get)

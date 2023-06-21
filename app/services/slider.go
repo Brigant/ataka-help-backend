@@ -12,7 +12,8 @@ import (
 
 type SliderRepo interface {
 	SelectSlider(context.Context) ([]structs.Slide, error)
-	InsertSlider(context.Context, structs.Slide) error
+	InsertSlider(context.Context, structs.Slide, chan struct{}) error
+	DelSlideByID(context.Context, string) (string, error)
 }
 
 type SliderService struct {
@@ -28,7 +29,7 @@ func (s SliderService) ReturnSlider(ctx context.Context) ([]structs.Slide, error
 	return response, nil
 }
 
-func (s SliderService) SaveSlider(ctx context.Context, form *multipart.Form) error {
+func (s SliderService) SaveSlider(ctx context.Context, form *multipart.Form, chWell chan struct{}) error {
 	file := form.File["thumb"][0]
 
 	slider := structs.Slide{
@@ -54,13 +55,30 @@ func (s SliderService) SaveSlider(ctx context.Context, form *multipart.Form) err
 		return fmt.Errorf(" written bytes: %v, error happens while io.Copy(): %w", written, err)
 	}
 
-	if err := s.Repo.InsertSlider(ctx, slider); err != nil {
+	if err := s.Repo.InsertSlider(ctx, slider, chWell); err != nil {
 		if err := os.Remove(slider.Thumb); err != nil {
 			return fmt.Errorf("error happens while remove file: %w", err)
 		}
 
 		return fmt.Errorf("error happens while inserting: %w", err)
 	}
+
+	return nil
+}
+
+func (s SliderService) DeleteSlideByID(ctx context.Context, ID string, chWell chan struct{}) error {
+	objectPath, err := s.Repo.DelSlideByID(ctx, ID)
+	if err != nil {
+		return fmt.Errorf("error while delete slide: %w", err)
+	}
+
+	if err := os.Remove(objectPath); err != nil {
+		return fmt.Errorf("error happens while remove file: %w", err)
+	}
+
+	chWell <- struct{}{}
+
+	close(chWell)
 
 	return nil
 }
