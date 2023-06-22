@@ -21,7 +21,7 @@ const (
 type SliderService interface {
 	ReturnSlider(context.Context) ([]structs.Slide, error)
 	SaveSlider(context.Context, *multipart.Form, chan struct{}) error
-	DeleteSlideByID(context.Context, string) error
+	DeleteSlideByID(context.Context, string, chan struct{}) error
 }
 
 type Slider struct {
@@ -37,28 +37,51 @@ func NewSliderHandler(service SliderService, log *logger.Logger) Slider {
 }
 
 func (s Slider) getSlider(ctx *fiber.Ctx) error {
+	chErr := make(chan error)
+
+	chWell := make(chan structs.SliderResponse)
+
 	ctxUser := ctx.UserContext()
 
-	ctxWithDeadline, cancel := context.WithDeadline(ctxUser, time.Now().Add(2*time.Second))
+	ctxWithDeadline, cancel := context.WithDeadline(ctxUser, time.Now().Add(1*time.Second))
 
 	defer cancel()
 
-	response, err := s.Service.ReturnSlider(ctxWithDeadline)
-	if err != nil {
-		s.log.Errorw("getSlider", "getSlider error", err.Error())
+	go func(chErr chan error, chWell chan structs.SliderResponse) {
+		response, err := s.Service.ReturnSlider(ctxWithDeadline)
+		if err != nil {
+			s.log.Errorw("getSlider", "getSlider error", err.Error())
 
+			chErr <- err
+
+			close(chErr)
+		}
+
+		result := structs.SliderResponse{
+			Code:   fiber.StatusOK,
+			Slider: response,
+		}
+
+		chWell <- result
+
+		close(chWell)
+	}(chErr, chWell)
+
+	/*
+		sync.WaitGroup had not added because select{} blocks main goroutine any way.
+	*/
+
+	select {
+	case result := <-chWell:
+		return ctx.Status(fiber.StatusOK).JSON(result)
+	case err := <-chErr:
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	case <-ctxWithDeadline.Done():
+		return ctx.Status(fiber.StatusRequestTimeout).JSON(structs.SetResponse(fiber.StatusRequestTimeout, fiber.ErrRequestTimeout.Message))
 	}
-
-	result := structs.SliderResponse{
-		Code:   fiber.StatusOK,
-		Slider: response,
-	}
-
-	return ctx.Status(fiber.StatusOK).JSON(result)
 }
 
-func (s Slider) createSlider(ctx *fiber.Ctx) error {
+func (s Slider) createSlide(ctx *fiber.Ctx) error {
 	allowedFileExtentions := []string{"jpg", "jpeg", "webp", "png"}
 
 	chErr := make(chan error)
@@ -80,7 +103,7 @@ func (s Slider) createSlider(ctx *fiber.Ctx) error {
 	title := form.Value["title"]
 
 	if title == nil || len(title[0]) < minTitle || len(title[0]) > maxTitle {
-		s.log.Debugw("createSlider", "form.Value title", "title is blank or out of range limits")
+		s.log.Debugw("createSlide", "form.Value title", "title is blank or out of range limits")
 
 		return fiber.NewError(fiber.StatusBadRequest, "title is blank or out of range limits")
 	}
@@ -88,11 +111,11 @@ func (s Slider) createSlider(ctx *fiber.Ctx) error {
 	file := form.File["thumb"]
 
 	if file != nil {
-		s.log.Debugw("createSlider", "file-name", file[0].Filename, "file-size", file[0].Size)
+		s.log.Debugw("createSlide", "file-name", file[0].Filename, "file-size", file[0].Size)
 	}
 
 	if file == nil || !isAllowedFileExtention(allowedFileExtentions, file[0].Filename) {
-		s.log.Debugw("createSlider", "form.File", err.Error())
+		s.log.Debugw("createSlide", "form.File", err.Error())
 
 		return fiber.NewError(fiber.StatusBadRequest, "thumb is absent")
 	}
@@ -100,7 +123,7 @@ func (s Slider) createSlider(ctx *fiber.Ctx) error {
 	alt := form.Value["alt"]
 
 	if alt == nil || len(alt[0]) < minAlt || len(alt[0]) > maxAlt {
-		s.log.Debugw("createSlider", "form.Value alt", "alt is blank or out of limits")
+		s.log.Debugw("createSlide", "form.Value alt", "alt is blank or out of limits")
 
 		return fiber.NewError(fiber.StatusBadRequest, "alt is blank or out of limits")
 	}
@@ -108,7 +131,7 @@ func (s Slider) createSlider(ctx *fiber.Ctx) error {
 	size := file[0].Size
 
 	if size > maxFileSize {
-		s.log.Debugw("createSlider", "form.File", "file too large")
+		s.log.Debugw("createSlide", "form.File", "file too large")
 
 		return fiber.NewError(fiber.StatusBadRequest, "file too large")
 	}
@@ -121,7 +144,7 @@ func (s Slider) createSlider(ctx *fiber.Ctx) error {
 
 	go func(chErr chan error, chWell chan struct{}) {
 		if err := s.Service.SaveSlider(ctxWithDeadline, form, chWell); err != nil {
-			s.log.Errorw("createSlider", "createSlider error", err.Error())
+			s.log.Errorw("createSlide", "createSlide error", err.Error())
 
 			chErr <- err
 
@@ -134,13 +157,9 @@ func (s Slider) createSlider(ctx *fiber.Ctx) error {
 	*/
 
 	select {
-	case <-chWell:
-		_ = <-chWell
-
+	case _ = <-chWell:
 		return ctx.Status(fiber.StatusOK).JSON(structs.SetResponse(fiber.StatusOK, "success"))
-	case <-chErr:
-		err := <-chErr
-
+	case err := <-chErr:
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	case <-ctxWithDeadline.Done():
 		return ctx.Status(fiber.StatusRequestTimeout).JSON(structs.SetResponse(fiber.StatusRequestTimeout, fiber.ErrRequestTimeout.Message))
@@ -148,6 +167,10 @@ func (s Slider) createSlider(ctx *fiber.Ctx) error {
 }
 
 func (s Slider) deleteSlide(ctx *fiber.Ctx) error {
+	chErr := make(chan error)
+
+	chWell := make(chan struct{})
+
 	param := struct {
 		ID string `params:"id"`
 	}{}
@@ -163,17 +186,34 @@ func (s Slider) deleteSlide(ctx *fiber.Ctx) error {
 
 	ctxUser := ctx.UserContext()
 
-	ctxWithDeadline, cancel := context.WithDeadline(ctxUser, time.Now().Add(500*time.Millisecond))
+	ctxWithDeadline, cancel := context.WithDeadline(ctxUser, time.Now().Add(1*time.Second))
 
 	defer cancel()
 
-	if err := s.Service.DeleteSlideByID(ctxWithDeadline, param.ID); err != nil {
+	go func(chErr chan error, chWell chan struct{}) {
+		if err := s.Service.DeleteSlideByID(ctxWithDeadline, param.ID, chWell); err != nil {
+			s.log.Errorw("deleteSlide", "deleteSlide error", err.Error())
+
+			chErr <- err
+
+			close(chErr)
+		}
+	}(chErr, chWell)
+
+	/*
+		sync.WaitGroup had not added because select{} blocks main goroutine any way.
+	*/
+
+	select {
+	case _ = <-chWell:
+		return ctx.Status(fiber.StatusOK).JSON(structs.SetResponse(fiber.StatusOK, "success"))
+	case err := <-chErr:
 		if errors.Is(err, structs.ErrNoRowAffected) {
 			return fiber.NewError(fiber.StatusBadRequest, err.Error())
 		}
 
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	case <-ctxWithDeadline.Done():
+		return ctx.Status(fiber.StatusRequestTimeout).JSON(structs.SetResponse(fiber.StatusRequestTimeout, fiber.ErrRequestTimeout.Message))
 	}
-
-	return ctx.Status(fiber.StatusOK).JSON(structs.SetResponse(fiber.StatusOK, "success"))
 }
