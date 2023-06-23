@@ -19,6 +19,7 @@ type RepoInterface interface {
 	PartnersRepo
 	SliderRepo
 	ContactRepo
+	UserRepo
 }
 
 type Services struct {
@@ -28,6 +29,7 @@ type Services struct {
 	ReportService
 	ContactService
 	FeedbackService
+	AuthService
 }
 
 func NewService(repo RepoInterface, cfg config.SMTP) (Services, error) {
@@ -43,6 +45,7 @@ func NewService(repo RepoInterface, cfg config.SMTP) (Services, error) {
 		ReportService{},
 		ContactService{Repo: repo},
 		feedbackService,
+		AuthService{Repo: repo},
 	}, nil
 }
 

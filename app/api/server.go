@@ -5,14 +5,16 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/baza-trainee/ataka-help-backend/app/api/midlware"
 	"github.com/baza-trainee/ataka-help-backend/app/config"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
+	"github.com/gofiber/fiber/v2/middleware/timeout"
 )
 
-const bodyLimit = 2 * 1024 * 1024
+const bodyLimit = 5 * 1024 * 1024
 
 type Server struct {
 	HTTPServer *fiber.App
@@ -52,7 +54,7 @@ func NewServer(cfg config.Config, handler Handler) *Server {
 
 	server.HTTPServer.Use(recover.New())
 
-	server.initRoutes(server.HTTPServer, handler)
+	server.initRoutes(server.HTTPServer, handler, cfg)
 
 	return server
 }
@@ -61,28 +63,37 @@ func (s *Server) Shutdown(ctx context.Context) error {
 	return fmt.Errorf("shutdown error: %w", s.HTTPServer.ShutdownWithContext(ctx))
 }
 
-func (s Server) initRoutes(app *fiber.App, h Handler) {
+func (s Server) initRoutes(app *fiber.App, h Handler, cfg config.Config) {
+	identifyUser := midlware.NewUserIdentity(cfg.Auth)
+
 	app.Static("/static", "./static")
 
-	app.Get("/cards", h.Card.getCards)
-	app.Post("/cards", h.Card.createCard)
-	app.Get("/cards/:id", h.Card.findCard)
-	app.Delete("/cards/:id", h.Card.deleteCard)
+	app.Get("/cards", timeout.NewWithContext(h.Card.getCards, cfg.Server.AppReadTimeout))
+	app.Post("/cards", identifyUser, timeout.NewWithContext(h.Card.createCard, cfg.Server.AppWriteTimeout))
+	app.Get("/cards/:id", timeout.NewWithContext(h.Card.findCard, cfg.Server.AppReadTimeout))
+	app.Delete("/cards/:id", identifyUser, timeout.NewWithContext(h.Card.deleteCard, cfg.Server.AppWriteTimeout))
 
-	app.Get("/partners", h.Partner.get)
+	app.Get("/partners", h.Partner.getPartners)
+	app.Post("/partners", h.Partner.createPartner)
+	app.Delete("/partners/:id", h.Partner.deletePartner)
 
 	app.Get("/slider", h.Slider.getSlider)
-	app.Post("/slider", h.Slider.createSlide)
-	app.Delete("/slider/:id", h.Slider.deleteSlide)
+	app.Post("/slider", identifyUser, h.Slider.createSlide)
+	app.Delete("/slider/:id", identifyUser, h.Slider.deleteSlide)
 
-	app.Put("/contacts", h.Contact.edit)
-	app.Get("/contacts", h.Contact.get)
+	app.Put("/contacts", identifyUser, timeout.NewWithContext(h.Contact.edit, cfg.Server.AppReadTimeout))
+	app.Get("/contacts", timeout.NewWithContext(h.Contact.get, cfg.Server.AppReadTimeout))
 
 	app.Get("/reports", h.Report.getReports)
-	app.Put("/reports", h.Report.updateReport)
-	app.Delete("/reports", h.Report.deleteReport)
+	app.Put("/reports", identifyUser, h.Report.updateReport)
+	app.Delete("/reports", identifyUser, h.Report.deleteReport)
 
-	app.Post("/feedback", h.Feedback.sendFedback)
+	app.Post("/feedback", timeout.NewWithContext(h.Feedback.sendFedback, cfg.Server.AppWriteTimeout))
+
+	app.Post("/auth/login", timeout.NewWithContext(h.Auth.login, cfg.Server.AppWriteTimeout))
+	app.Post("/auth/logout", identifyUser, timeout.NewWithContext(h.Auth.logout, cfg.Server.AppWriteTimeout))
+	app.Post("/auth/refresh", h.Auth.refresh)
+	app.Post("/auth/change", identifyUser, timeout.NewWithContext(h.Auth.change, cfg.Server.AppReadTimeout))
 }
 
 func corsConfig() cors.Config {

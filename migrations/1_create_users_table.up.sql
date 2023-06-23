@@ -1,5 +1,5 @@
 CREATE TABLE "users" (
-  "id" uuid DEFAULT gen_random_uuid() NOT NULL,
+   "id" uuid DEFAULT gen_random_uuid() NOT NULL,
    "email" VARCHAR(252) NOT NULL,
    "password" VARCHAR(255) NOT NULL,
    "firs_name" VARCHAR(255) NOT NULL,

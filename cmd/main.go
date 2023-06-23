@@ -48,7 +48,7 @@ func main() {
 		return
 	}
 
-	handler := api.NewHandler(service, logger)
+	handler := api.NewHandler(service, logger, cfg.Auth)
 
 	server := api.NewServer(cfg, handler)
 

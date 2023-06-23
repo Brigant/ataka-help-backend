@@ -102,8 +102,8 @@ func (s Slider) createSlide(ctx *fiber.Ctx) error {
 
 	title := form.Value["title"]
 
-	if title == nil || len(title[0]) < minTitle || len(title[0]) > maxTitle {
-		s.log.Debugw("createSlide", "form.Value title", "title is blank or out of range limits")
+	if title == nil || symbolsCounter(title[0]) < minTitle || symbolsCounter(title[0]) > maxTitle {
+		s.log.Debugw("createSlider", "form.Value title", "title is blank or out of range limits")
 
 		return fiber.NewError(fiber.StatusBadRequest, "title is blank or out of range limits")
 	}
@@ -122,8 +122,8 @@ func (s Slider) createSlide(ctx *fiber.Ctx) error {
 
 	alt := form.Value["alt"]
 
-	if alt == nil || len(alt[0]) < minAlt || len(alt[0]) > maxAlt {
-		s.log.Debugw("createSlide", "form.Value alt", "alt is blank or out of limits")
+	if alt == nil || symbolsCounter(alt[0]) < minAlt || symbolsCounter(alt[0]) > maxAlt {
+		s.log.Debugw("createSlider", "form.Value alt", "alt is blank or out of limits")
 
 		return fiber.NewError(fiber.StatusBadRequest, "alt is blank or out of limits")
 	}

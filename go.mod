@@ -5,6 +5,7 @@ go 1.20
 require (
 	github.com/caarlos0/env/v8 v8.0.0
 	github.com/gofiber/fiber/v2 v2.45.0
+	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/google/uuid v1.3.0
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/lib/pq v1.10.9

@@ -3,12 +3,13 @@ package api
 import (
 	"strings"
 
+	"github.com/baza-trainee/ataka-help-backend/app/config"
 	"github.com/baza-trainee/ataka-help-backend/app/logger"
 )
 
 const (
 	fileLimit     = 2 * 1024 * 1024
-	defaultLimit  = 6
+	defaultLimit  = 0
 	defaultOffset = 0
 )
 
@@ -19,6 +20,7 @@ type ServiceInterfaces interface {
 	ReportService
 	ContactService
 	FeedbackService
+	AutService
 }
 
 type Handler struct {
@@ -28,9 +30,10 @@ type Handler struct {
 	Report   ReportHandler
 	Contact  ContactHandler
 	Feedback FeedbackHandler
+	Auth     AuthHandler
 }
 
-func NewHandler(services ServiceInterfaces, log *logger.Logger) Handler {
+func NewHandler(services ServiceInterfaces, log *logger.Logger, cfg config.AuthConfig) Handler {
 	return Handler{
 		Card:     NewCardsHandler(services, log),
 		Partner:  NewParnerHandler(services, log),
@@ -38,6 +41,7 @@ func NewHandler(services ServiceInterfaces, log *logger.Logger) Handler {
 		Contact:  NewContactHandler(services, log),
 		Slider:   NewSliderHandler(services, log),
 		Feedback: NewFeedbackHandler(services, log),
+		Auth:     NewAuthHandler(services, log, cfg),
 	}
 }
 
@@ -52,4 +56,10 @@ func isAllowedFileExtention(allowedList []string, fileName string) bool {
 	}
 
 	return false
+}
+
+func symbolsCounter(sentence string) int {
+	runes := []rune(sentence)
+
+	return len(runes)
 }
