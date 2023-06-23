@@ -23,16 +23,18 @@ type PartnerService interface {
 type Partner struct {
 	Service PartnerService
 	log     *logger.Logger
+	cfg     config.Server
 }
 
-func NewParnerHandler(service PartnerService, log *logger.Logger) Partner {
+func NewPartnerHandler(service PartnerService, log *logger.Logger, cfg config.Server) Partner {
 	return Partner{
 		Service: service,
 		log:     log,
+		cfg:     cfg,
 	}
 }
 
-func (p Partner) getPartners(ctx *fiber.Ctx, cfg config.Config) error {
+func (p Partner) getPartners(ctx *fiber.Ctx) error {
 	chErr := make(chan error)
 
 	chWell := make(chan structs.PartnerResponse)
@@ -48,7 +50,7 @@ func (p Partner) getPartners(ctx *fiber.Ctx, cfg config.Config) error {
 
 	ctxUser := ctx.UserContext()
 
-	ctxWithDeadline, cancel := context.WithDeadline(ctxUser, time.Now().Add(cfg.Server.DeadlineTimer))
+	ctxWithDeadline, cancel := context.WithDeadline(ctxUser, time.Now().Add(p.cfg.AppWriteTimeout))
 
 	defer cancel()
 
@@ -84,7 +86,7 @@ func (p Partner) getPartners(ctx *fiber.Ctx, cfg config.Config) error {
 	}
 }
 
-func (p Partner) createPartner(ctx *fiber.Ctx, cfg config.Config) error {
+func (p Partner) createPartner(ctx *fiber.Ctx) error {
 	allowedFileExtentions := []string{"jpg", "jpeg", "webp", "png"}
 
 	const (
@@ -132,7 +134,7 @@ func (p Partner) createPartner(ctx *fiber.Ctx, cfg config.Config) error {
 
 	ctxUser := ctx.UserContext()
 
-	ctxWithDeadline, cancel := context.WithDeadline(ctxUser, time.Now().Add(cfg.Server.DeadlineTimer))
+	ctxWithDeadline, cancel := context.WithDeadline(ctxUser, time.Now().Add(p.cfg.AppWriteTimeout))
 
 	defer cancel()
 
@@ -156,7 +158,7 @@ func (p Partner) createPartner(ctx *fiber.Ctx, cfg config.Config) error {
 	}
 }
 
-func (p Partner) deletePartner(ctx *fiber.Ctx, cfg config.Config) error {
+func (p Partner) deletePartner(ctx *fiber.Ctx) error {
 	chErr := make(chan error)
 
 	chWell := make(chan struct{})
@@ -176,7 +178,7 @@ func (p Partner) deletePartner(ctx *fiber.Ctx, cfg config.Config) error {
 
 	ctxUser := ctx.UserContext()
 
-	ctxWithDeadline, cancel := context.WithDeadline(ctxUser, time.Now().Add(cfg.Server.DeadlineTimer))
+	ctxWithDeadline, cancel := context.WithDeadline(ctxUser, time.Now().Add(p.cfg.AppWriteTimeout))
 
 	defer cancel()
 

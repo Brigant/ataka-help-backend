@@ -28,23 +28,25 @@ type SliderService interface {
 type Slider struct {
 	Service SliderService
 	log     *logger.Logger
+	cfg     config.Server
 }
 
-func NewSliderHandler(service SliderService, log *logger.Logger) Slider {
+func NewSliderHandler(service SliderService, log *logger.Logger, cfg config.Server) Slider {
 	return Slider{
 		Service: service,
 		log:     log,
+		cfg:     cfg,
 	}
 }
 
-func (s Slider) getSlider(ctx *fiber.Ctx, cfg config.Config) error {
+func (s Slider) getSlider(ctx *fiber.Ctx) error {
 	chErr := make(chan error)
 
 	chWell := make(chan structs.SliderResponse)
 
 	ctxUser := ctx.UserContext()
 
-	ctxWithDeadline, cancel := context.WithDeadline(ctxUser, time.Now().Add(cfg.Server.DeadlineTimer))
+	ctxWithDeadline, cancel := context.WithDeadline(ctxUser, time.Now().Add(s.cfg.AppWriteTimeout))
 
 	defer cancel()
 
@@ -78,7 +80,7 @@ func (s Slider) getSlider(ctx *fiber.Ctx, cfg config.Config) error {
 	}
 }
 
-func (s Slider) createSlide(ctx *fiber.Ctx, cfg config.Config) error {
+func (s Slider) createSlide(ctx *fiber.Ctx) error {
 	allowedFileExtentions := []string{"jpg", "jpeg", "webp", "png"}
 
 	chErr := make(chan error)
@@ -136,7 +138,7 @@ func (s Slider) createSlide(ctx *fiber.Ctx, cfg config.Config) error {
 
 	ctxUser := ctx.UserContext()
 
-	ctxWithDeadline, cancel := context.WithDeadline(ctxUser, time.Now().Add(cfg.Server.DeadlineTimer))
+	ctxWithDeadline, cancel := context.WithDeadline(ctxUser, time.Now().Add(s.cfg.AppWriteTimeout))
 
 	defer cancel()
 
@@ -160,7 +162,7 @@ func (s Slider) createSlide(ctx *fiber.Ctx, cfg config.Config) error {
 	}
 }
 
-func (s Slider) deleteSlide(ctx *fiber.Ctx, cfg config.Config) error {
+func (s Slider) deleteSlide(ctx *fiber.Ctx) error {
 	chErr := make(chan error)
 
 	chWell := make(chan struct{})
@@ -180,7 +182,7 @@ func (s Slider) deleteSlide(ctx *fiber.Ctx, cfg config.Config) error {
 
 	ctxUser := ctx.UserContext()
 
-	ctxWithDeadline, cancel := context.WithDeadline(ctxUser, time.Now().Add(cfg.Server.DeadlineTimer))
+	ctxWithDeadline, cancel := context.WithDeadline(ctxUser, time.Now().Add(s.cfg.AppWriteTimeout))
 
 	defer cancel()
 

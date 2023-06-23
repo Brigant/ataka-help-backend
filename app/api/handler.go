@@ -3,6 +3,7 @@ package api
 import (
 	"strings"
 
+	"github.com/baza-trainee/ataka-help-backend/app/config"
 	"github.com/baza-trainee/ataka-help-backend/app/logger"
 )
 
@@ -30,13 +31,13 @@ type Handler struct {
 	Feedback FeedbackHandler
 }
 
-func NewHandler(services ServiceInterfaces, log *logger.Logger) Handler {
+func NewHandler(services ServiceInterfaces, log *logger.Logger, cfg config.Config) Handler {
 	return Handler{
 		Card:     NewCardsHandler(services, log),
-		Partner:  NewParnerHandler(services, log),
+		Partner:  NewPartnerHandler(services, log, cfg.Server),
 		Report:   NewReportHandler(services, log),
 		Contact:  NewContactHandler(services, log),
-		Slider:   NewSliderHandler(services, log),
+		Slider:   NewSliderHandler(services, log, cfg.Server),
 		Feedback: NewFeedbackHandler(services, log),
 	}
 }
