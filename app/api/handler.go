@@ -61,12 +61,5 @@ func isAllowedFileExtention(allowedList []string, fileName string) bool {
 func symbolsCounter(sentence string) int {
 	runes := []rune(sentence)
 
-	var counter int
-
-	for _, k := range runes {
-		_ = k
-		counter++
-	}
-
-	return counter
+	return len(runes)
 }

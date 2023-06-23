@@ -82,14 +82,14 @@ func (h CardHandler) createCard(ctx *fiber.Ctx) error {
 		h.log.Debugw("createCard", "form.File", "required thumb not biger then 5 Mb and format jpg/jpeg/webp")
 
 		return fiber.NewError(fiber.StatusBadRequest, "required thumb not bigger then 5 Mb and format jpg/jpeg/webp")
-	case form.Value["title"] == nil || len(form.Value["title"][0]) < minTitle || len(form.Value["title"][0]) > maxTitle:
+	case form.Value["title"] == nil || symbolsCounter(form.Value["title"][0]) < minTitle || symbolsCounter(form.Value["title"][0]) > maxTitle:
 		h.log.Debugw("createCard", "form.Vlaues", "required title more than 3 letters and less than 300")
 
 		return fiber.NewError(fiber.StatusBadRequest, "required title more than 3 letters and less than 300")
-	case form.Value["alt"] == nil || len(form.Value["alt"][0]) < minAltItems || len(form.Value["alt"][0]) > maxAltItems:
-		h.log.Debugw("createCard", "form.Vlaues", "required alt")
+	case form.Value["alt"] == nil || symbolsCounter(form.Value["alt"][0]) < minAltItems || symbolsCounter(form.Value["alt"][0]) > maxAltItems:
+		h.log.Debugw("createCard", "form.Vlaues", "alt is out of limit range")
 
-		return fiber.NewError(fiber.StatusBadRequest, "required alt")
+		return fiber.NewError(fiber.StatusBadRequest, "alt is out of limit range")
 	case form.Value["description"] == nil || len(form.Value["description"][0]) < minDescription:
 		h.log.Debugw("createCard", "form.Vlaues", "required description")
 
