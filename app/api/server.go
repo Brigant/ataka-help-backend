@@ -78,7 +78,7 @@ func (s Server) initRoutes(app *fiber.App, h Handler, cfg config.Config) {
 	app.Delete("/partners/:id", h.Partner.deletePartner)
 
 	app.Get("/slider", h.Slider.getSlider)
-	app.Post("/slider", identifyUser, h.Slider.createSlider)
+	app.Post("/slider", identifyUser, h.Slider.createSlide)
 	app.Delete("/slider/:id", identifyUser, h.Slider.deleteSlide)
 
 	app.Put("/contacts", identifyUser, timeout.NewWithContext(h.Contact.edit, cfg.Server.AppReadTimeout))
