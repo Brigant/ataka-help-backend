@@ -80,7 +80,7 @@ func (h AuthHandler) refresh(ctx *fiber.Ctx) error {
 	refreshString := ctx.Cookies(structs.RefreshCookieName)
 
 	if refreshString == "" {
-		return fiber.NewError(fiber.StatusBadRequest, "empty cookie")
+		return fiber.NewError(fiber.StatusUnauthorized, "empty cookie")
 	}
 
 	userID, err := midlware.ParseToken(refreshString, h.AuthConfig.SigningKey)
