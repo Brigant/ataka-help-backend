@@ -25,6 +25,7 @@ var inMemory = make(map[string]string)
 func (s AuthService) GetTokenPair(ctx context.Context, identity structs.IdentityData, cfg config.AuthConfig) (structs.TokenPair, error) {
 	hashed := structs.SHA256(identity.Password, cfg.Salt)
 	identity.Password = hashed
+	fmt.Println(hashed)
 
 	userID, err := s.Repo.FindEmailWithPasword(ctx, identity)
 	if err != nil {
