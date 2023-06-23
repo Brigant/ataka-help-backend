@@ -174,7 +174,7 @@ func (r Repo) DelSlideByID(ctx context.Context, ID string) (string, error) {
 	getQuery := `SELECT thumb FROM public.slider WHERE id = $1`
 
 	objectPath := struct {
-		Thumb string
+		Thumb string `db:"thumb"`
 	}{}
 
 	if err := r.db.GetContext(ctx, &objectPath, getQuery, ID); err != nil {
