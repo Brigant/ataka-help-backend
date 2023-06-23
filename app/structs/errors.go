@@ -13,4 +13,6 @@ var (
 	ErrInvalidSigningMethod = errors.New("invalid signing metod")
 	ErrWrongTokenClaimType  = errors.New("token claims are not of type *tokenClaims")
 	ErrTimeout              = errors.New("timeout")
+	ErrEmptyField           = errors.New("field shoud be not empty")
+	ErrNotMatch             = errors.New("the pasword doesn't match")
 )

@@ -31,16 +31,13 @@ func NewCardsHandler(service CardService, log *logger.Logger) CardHandler {
 }
 
 func (h CardHandler) getCards(ctx *fiber.Ctx) error {
-	params := structs.CardQueryParameters{
-		Limit:  defaultLimit,
-		Offset: defaultOffset,
-	}
+	params := structs.CardQueryParameters{}
 
 	if err := ctx.QueryParser(&params); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 
-	cards, total, err := h.Service.ReturnCards(ctx.Context(), params)
+	cards, total, err := h.Service.ReturnCards(ctx.UserContext(), params)
 	if err != nil && !errors.Is(err, structs.ErrNotFound) {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}

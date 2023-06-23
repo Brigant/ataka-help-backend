@@ -80,79 +80,25 @@ func (r Repo) SelectContact(ctx context.Context) (structs.Contact, error) {
 	return contact, nil
 }
 
-func (r Repo) SelectAllCards(ctx context.Context, params structs.CardQueryParameters) ([]structs.Card, error) {
-	query := `
-		SELECT id, title, thumb, alt, description, created, modified
-		FROM public.cards c
-		ORDER BY c.created DESC
-		Limit $1
-		OFFSET $2;
-	`
-	cards := []structs.Card{}
-
-	rows, err := r.db.QueryContext(ctx, query, params.Limit, params.Offset)
-	if err != nil {
-		return nil, fmt.Errorf("an error occurs while QueryContext: %w", err)
-	}
-
-	defer rows.Close()
-
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("an error occurs while rows.Err(): %w", err)
-	}
-
-	for rows.Next() {
-		card := structs.Card{}
-
-		if err := rows.Scan(
-			&card.ID, &card.Title, &card.Thumb, &card.Alt,
-			&card.Description, &card.Created, &card.Modified); err != nil {
-			return nil, fmt.Errorf("an error occurs while rows.Scan: %w", err)
-		}
-
-		cards = append(cards, card)
-	}
-
-	return cards, nil
-}
-
-func (r Repo) InsertCard(ctx context.Context, card structs.Card) error {
-	query := `INSERT INTO public.cards
-	(title, thumb, alt, description)
-	VALUES($1, $2, $3, $4::json);`
-
-	result, err := r.db.ExecContext(ctx, query, card.Title, card.Thumb, card.Alt, card.Description)
-	if err != nil {
-		pqError := new(pq.Error)
-		if errors.As(err, &pqError) && pqError.Code.Name() == ErrCodeUniqueViolation {
-			return structs.ErrUniqueRestriction
-		}
-
-		return fmt.Errorf("error in NamedEx: %w", err)
-	}
-
-	effectedRows, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("the error is in RowsAffected: %w", err)
-	}
-
-	if effectedRows != expectedAffectedRow {
-		return structs.ErrNoRowAffected
-	}
-
-	return nil
-}
-
 func (r Repo) CountRowsTable(ctx context.Context, table string) (int, error) {
 	query := `SELECT count(*) as result FROM public.` + table
 
-	var total int
+	select {
+	case <-ctx.Done():
+		return 0, structs.ErrTimeout
+	default:
+		var total int
+		if err := r.db.GetContext(ctx, &total, query); err != nil {
+			pqErr := new(pq.Error)
+			if errors.As(err, &pqErr) && pqErr.Code.Name() == "query_canceled" {
+				return 0, structs.ErrTimeout
+			}
 
-	if err := r.db.GetContext(ctx, &total, query); err != nil {
-		return 0, fmt.Errorf("error in GetContext: %w", err)
+			return 0, fmt.Errorf("an error occurs while QueryContext: %w", err)
+		}
+
+		return total, nil
 	}
-
-	return total, nil
 }
 
 func (r Repo) SelectAllPartners() (string, error) {
@@ -224,42 +170,6 @@ func (r Repo) InsertSlider(ctx context.Context, slider structs.Slide, chWell cha
 	return nil
 }
 
-func (r Repo) SelectCardByID(ctx context.Context, id string) (structs.Card, error) {
-	query := `SELECT * FROM public.cards WHERE id=$1`
-
-	card := structs.Card{}
-
-	if err := r.db.GetContext(ctx, &card, query, id); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return structs.Card{}, structs.ErrNotFound
-		}
-
-		return structs.Card{}, fmt.Errorf("error in GetContext(): %w", err)
-	}
-
-	return card, nil
-}
-
-func (r Repo) DelCardByID(ctx context.Context, id string) error {
-	query := `DELETE FROM public.cards WHERE id=$1`
-
-	sqlResult, err := r.db.ExecContext(ctx, query, id)
-	if err != nil {
-		return fmt.Errorf("error in ExecContext(): %w", err)
-	}
-
-	affectedRows, err := sqlResult.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("the error is in RowsAffected: %w", err)
-	}
-
-	if affectedRows != expectedAffectedRow {
-		return structs.ErrNoRowAffected
-	}
-
-	return nil
-}
-
 func (r Repo) DelSlideByID(ctx context.Context, ID string) (string, error) {
 	getQuery := `SELECT thumb FROM public.slider WHERE id = $1`
 
@@ -291,24 +201,6 @@ func (r Repo) DelSlideByID(ctx context.Context, ID string) (string, error) {
 }
 
 func (r Repo) FindEmailWithPasword(ctx context.Context, identity structs.IdentityData) (string, error) {
-	// Test for context canceling
-	// query2 := `SELECT pg_sleep(20)`
-	// select {
-	// case <-ctx.Done():
-	// 	return "", structs.ErrTimeout
-	// default:
-	// 	_, err := r.db.ExecContext(ctx, query2)
-	// 	if err != nil {
-	// 		pqErr := new(pq.Error)
-	// 		if errors.As(err, &pqErr) && pqErr.Code.Name() == "query_canceled" {
-	// 			return "", structs.ErrTimeout
-	// 		}
-
-	// 		return "", err
-	// 	}
-	// 	return "", nil
-	// }
-
 	var userID string
 
 	query := `SELECT id FROM public.users WHERE email=$1 and password=$2 `
@@ -331,5 +223,59 @@ func (r Repo) FindEmailWithPasword(ctx context.Context, identity structs.Identit
 		}
 
 		return userID, nil
+	}
+}
+
+func (r Repo) CheckUserIDWithPasword(ctx context.Context, userID, password string) error {
+	query := `SELECT id FROM public.users WHERE id=$1 and password=$2 `
+
+	select {
+	case <-ctx.Done():
+		return structs.ErrTimeout
+	default:
+		id := ""
+		if err := r.db.GetContext(ctx, &id, query, userID, password); err != nil {
+			pqErr := new(pq.Error)
+			if errors.As(err, &pqErr) && pqErr.Code.Name() == "query_canceled" {
+				return structs.ErrTimeout
+			}
+
+			if id == "" {
+				return structs.ErrNotFound
+			}
+
+			return fmt.Errorf("error while GetContext(): %w", err)
+		}
+
+		return nil
+	}
+}
+
+func (r Repo) UpdatePassord(ctx context.Context, userID, password string) error {
+	query := `UPDATE  public.users SET password=$2 WHERE id=$1 `
+
+	select {
+	case <-ctx.Done():
+		return structs.ErrTimeout
+	default:
+		if result, err := r.db.ExecContext(ctx, query, userID, password); err != nil {
+			pqErr := new(pq.Error)
+			if errors.As(err, &pqErr) && pqErr.Code.Name() == "query_canceled" {
+				return structs.ErrTimeout
+			}
+
+			affected, err := result.RowsAffected()
+			if err != nil {
+				return fmt.Errorf("error in RowsAffected(): %w", err)
+			}
+
+			if affected != expectedAffectedRow {
+				return structs.ErrNoRowAffected
+			}
+
+			return fmt.Errorf("error while GetContext(): %w", err)
+		}
+
+		return nil
 	}
 }

@@ -17,7 +17,7 @@ servers:
 tags:
   - name: cards
     description: Card is the main entity of the information carier.
-  - name: users
+  - name: auth
     description: Operations about user authorization.
   - name: feedback
     description: This is the endpoint through which the user can fill out the form and send feedback.
@@ -26,9 +26,11 @@ tags:
   - name: partners
     description: This is the endpoint through which you need to get partner logos to the main page. The administrator can also change them.
   - name: reports
-    description: This is the endpoint through which the administrator should upload the document with the activity report. 
+    description: This is the endpoint through which the administrator should upload the document with the activity report.
+  - name: contacts
+    description: Alow to get and set contacts info
 paths:
-  /:
+  /cards:
     get:
       tags:
         - cards
@@ -98,7 +100,7 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "500": { $ref: "#/components/responses/InternalError" }
       security:
-        - BearerAuth: []
+        -  accessCookieAuth: []
   /cards/{id}:
     get:
       tags:
@@ -134,7 +136,7 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/InternalError" }
       security:
-        - BearerAuth: []
+        -  accessCookieAuth: []
 
     delete:
       tags:
@@ -150,36 +152,13 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/InternalError" }
       security:
-        - BearerAuth: []
-  
-  /users:
-    post:
-      tags:
-        - users
-      summary: Create user
-      description: This can only be done by the logged in user.
-      operationId: createUser
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/User"
-        description: Created user object
-      responses:
-        "200": { $ref: "#/components/responses/Success" }
-        "400": { $ref: "#/components/responses/BadRequest" }
-        "401": { $ref: "#/components/responses/Unauthorized" }
-        "409": { $ref: "#/components/responses/Conflict" }
-        "500": { $ref: "#/components/responses/InternalError" }
-      security:
-        - BearerAuth: []
+        -  accessCookieAuth: []
   
   /auth/login:
     post:
       tags:
-        - users
-      summary: Logs user into the system
+        - auth
+      summary: Logs in and returns the authentication  cookies
       operationId: loginUser
       requestBody:
         required: true
@@ -188,10 +167,10 @@ paths:
             schema:
               type: object
               required:
-                - email
+                - login
                 - password
               properties:
-                email:
+                login:
                   type: string
                   format: email
                   example: DaenerysTargaryen@gmail.com
@@ -200,28 +179,64 @@ paths:
                   format: password
                   example: password1234
       responses:
-        "200": { $ref: "#/components/schemas/TokenPair" }
+        "200":
+          description: >
+            Successfully authenticated.
+            The endpoint returns two named cookies `access-cookie` 
+            and `refresh-cookie`. The `access-cookie` You need to include 
+            this cookie in subsequent requests. And the `refresh-cookie` 
+            You are required for refresh requests.
+          headers: 
+            Set-Cookie:
+              schema: 
+                type: string
+                example: access-cookie=abcde12345; HttpOnly
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
-        "500": { $ref: "#/components/responses/InternalError" }
-  
+        "500": { $ref: "#/components/responses/InternalError" }  
   /auth/logout:
     get:
       tags:
-        - users
+        - auth
       summary: Logs out current logged in user session
       operationId: logoutUser
       responses:
         "200": { $ref: "#/components/responses/Success" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "500": { $ref: "#/components/responses/InternalError" }
-      security:
-        - BearerAuth: []
-  
+      security: []
+  /auth/refresh:
+    post:
+      tags:
+        - auth
+      summary: Logs in and returns the authentication  cookies
+      operationId: refresh
+      parameters:
+        - in: cookie
+          name: refresh-cookie
+          description: You should provide the `refresh-cookie`
+          schema:
+            type: string
+          required: true
+      responses:
+        "200":
+          description: >
+            Refresh.
+            The endpoint returns two named cookies `access-cookie` 
+            and `refresh-cookie`. The `access-cookie` You need to include 
+            this cookie in subsequent requests. And the `refresh-cookie` 
+            You are required for refresh requests.
+          headers: 
+            Set-Cookie:
+              schema: 
+                type: string
+                example: access-cookie=abcde12345; HttpOnly
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "500": { $ref: "#/components/responses/InternalError" } 
   /auth/change:
     post:
       tags:
-        - users
+        - auth
       summary:  Password changing for authorized users
       operationId: changePassword
       requestBody:
@@ -254,6 +269,8 @@ paths:
         "200": { $ref: "#/components/responses/Success" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "500": { $ref: "#/components/responses/InternalError" }
+      security:
+        -  accessCookieAuth: []
 
   /feedback:
     post:
@@ -323,8 +340,8 @@ paths:
         "409": { $ref: "#/components/responses/Conflict" }
         "500": { $ref: "#/components/responses/InternalError" }
       security:
-        - BearerAuth: []
-
+        -  accessCookieAuth: []
+  /slider/{id}:
     delete:
       tags:
         - slider
@@ -339,7 +356,7 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/InternalError" }
       security:
-        - BearerAuth: []
+        -  accessCookieAuth: []
 
   /partners:
     get:
@@ -382,7 +399,7 @@ paths:
         "409": { $ref: "#/components/responses/Conflict" }
         "500": { $ref: "#/components/responses/InternalError" }
       security:
-        - BearerAuth: []
+        -  accessCookieAuth: []
     
     put: 
       tags:
@@ -397,8 +414,7 @@ paths:
         "409": { $ref: "#/components/responses/Conflict" }
         "500": { $ref: "#/components/responses/InternalError" }
       security:
-        - BearerAuth: []
-
+        -  accessCookieAuth: []
   /partners/{id}:
     delete: 
       tags:
@@ -413,7 +429,7 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/InternalError" }
       security:
-        - BearerAuth: []
+        -  accessCookieAuth: []
   
   /reports:
     get: 
@@ -464,7 +480,7 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "500": { $ref: "#/components/responses/InternalError" }
       security:
-        - BearerAuth: []
+        -  accessCookieAuth: []
 
     delete: 
       tags:
@@ -477,16 +493,14 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/InternalError" }
       security:
-        - BearerAuth: []
+        -  accessCookieAuth: []
 
-  /contact:
+  /contacts:
     get:
       tags:
-        - contact
-      summary: Get contact by ID
-      operationId: getContactById
-      parameters:
-        - $ref: "#/components/parameters/id"
+        - contacts
+      summary: Get contacts
+      operationId: getContacts
       responses:
         "200":
           description: successful operation
@@ -500,11 +514,9 @@ paths:
     
     put:
       tags:
-        - contact
-      summary: Update contact by ID
-      operationId: updateContactById
-      parameters:
-        - $ref: "#/components/parameters/id"
+        - contacts
+      summary: Update contacts
+      operationId: updateContacts
       requestBody:
         $ref: "#/components/requestBodies/Contact"
       responses:
@@ -514,7 +526,7 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/InternalError" }
       security:
-        - BearerAuth: []
+        -  accessCookieAuth: []
 
 components:
   schemas:
@@ -682,8 +694,7 @@ components:
           type: string
         email:
           type: string
-
-          
+       
   requestBodies:
     Report:
       required: true
@@ -759,10 +770,14 @@ components:
       description: Contact object that needs to be added to the server
   
   securitySchemes:
-    BearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
+    accessCookieAuth:         # arbitrary name for the security scheme; will be used in the "security" key later
+      type: apiKey
+      in: cookie
+      name: access-cookie
+    refreshCookieAuth:         # arbitrary name for the security scheme; will be used in the "security" key later
+      type: apiKey
+      in: cookie
+      name: refresh-cookie
   
   parameters:
     id:
@@ -794,8 +809,7 @@ components:
         minimum: 1
         maximum: 50
         example: 5
-        
-  
+         
   responses:
     Success:
       description: A successful response

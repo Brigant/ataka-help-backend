@@ -16,19 +16,20 @@ type AutService interface {
 	GetTokenPair(context.Context, structs.IdentityData, config.AuthConfig) (structs.TokenPair, error)
 	CleanSession(string)
 	Refresh(string, string, config.AuthConfig) (structs.TokenPair, error)
+	ChangePassword(context.Context, string, structs.PasswordsContainer, config.AuthConfig) error
 }
 
 type AuthHandler struct {
-	Service AutService
-	log     *logger.Logger
-	Auth    config.AuthConfig
+	Service    AutService
+	log        *logger.Logger
+	AuthConfig config.AuthConfig
 }
 
 func NewAuthHandler(service AutService, log *logger.Logger, cfg config.AuthConfig) AuthHandler {
 	return AuthHandler{
-		Service: service,
-		log:     log,
-		Auth:    cfg,
+		Service:    service,
+		log:        log,
+		AuthConfig: cfg,
 	}
 }
 
@@ -43,7 +44,7 @@ func (h AuthHandler) login(ctx *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, structs.ErrWrongBody.Error())
 	}
 
-	tokenPair, err := h.Service.GetTokenPair(ctx.UserContext(), identity, h.Auth)
+	tokenPair, err := h.Service.GetTokenPair(ctx.UserContext(), identity, h.AuthConfig)
 	if err != nil {
 		if errors.Is(err, structs.ErrTimeout) {
 			return fiber.NewError(fiber.StatusRequestTimeout, err.Error())
@@ -56,21 +57,19 @@ func (h AuthHandler) login(ctx *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
-	accessCookie := new(fiber.Cookie)
-	accessCookie.Name = structs.AccessCookieName
-	accessCookie.Value = tokenPair.AccessToken
-	accessCookie.Expires = tokenPair.AccessExpire
-	accessCookie.HTTPOnly = true
-	// cookie.Secure = true
+	accessCookie := newCookie(
+		structs.AccessCookieName,
+		tokenPair.AccessToken,
+		tokenPair.AccessExpire,
+	)
 
 	ctx.Cookie(accessCookie)
 
-	refreshCookie := new(fiber.Cookie)
-	refreshCookie.Name = structs.RefreshCookieName
-	refreshCookie.Value = tokenPair.RefreshToken
-	refreshCookie.Expires = tokenPair.RefresgExpire
-	refreshCookie.HTTPOnly = true
-	// cookie.Secure = true
+	refreshCookie := newCookie(
+		structs.RefreshCookieName,
+		tokenPair.RefreshToken,
+		tokenPair.RefresgExpire,
+	)
 
 	ctx.Cookie(refreshCookie)
 
@@ -81,35 +80,32 @@ func (h AuthHandler) refresh(ctx *fiber.Ctx) error {
 	refreshString := ctx.Cookies(structs.RefreshCookieName)
 
 	if refreshString == "" {
-		return fiber.NewError(fiber.StatusUnauthorized, "empty cookie")
+		return fiber.NewError(fiber.StatusBadRequest, "empty cookie")
 	}
 
-	userID, err := midlware.ParseToken(refreshString, h.Auth.SigningKey)
+	userID, err := midlware.ParseToken(refreshString, h.AuthConfig.SigningKey)
 	if err != nil {
-		return fiber.NewError(fiber.StatusUnauthorized, err.Error())
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 
-	tokenPair, err := h.Service.Refresh(refreshString, userID, h.Auth)
+	tokenPair, err := h.Service.Refresh(refreshString, userID, h.AuthConfig)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
-	accessCookie := new(fiber.Cookie)
-	accessCookie.Name = structs.AccessCookieName
-	accessCookie.Value = tokenPair.AccessToken
-	accessCookie.Expires = tokenPair.AccessExpire
-	accessCookie.HTTPOnly = true
-	// cookie.Secure = true
+	accessCookie := newCookie(
+		structs.AccessCookieName,
+		tokenPair.AccessToken,
+		tokenPair.AccessExpire,
+	)
+
+	refreshCookie := newCookie(
+		structs.RefreshCookieName,
+		tokenPair.RefreshToken,
+		tokenPair.RefresgExpire,
+	)
 
 	ctx.Cookie(accessCookie)
-
-	refreshCookie := new(fiber.Cookie)
-	refreshCookie.Name = structs.RefreshCookieName
-	refreshCookie.Value = tokenPair.RefreshToken
-	refreshCookie.Expires = tokenPair.RefresgExpire
-	refreshCookie.HTTPOnly = true
-	// cookie.Secure = true
-
 	ctx.Cookie(refreshCookie)
 
 	return ctx.Status(fiber.StatusOK).JSON(structs.SetResponse(fiber.StatusOK, "refreshed"))
@@ -118,23 +114,55 @@ func (h AuthHandler) refresh(ctx *fiber.Ctx) error {
 func (h AuthHandler) logout(ctx *fiber.Ctx) error {
 	userID := ctx.Locals("userID")
 
-	accesCookie := new(fiber.Cookie)
-	accesCookie.Name = structs.AccessCookieName
-	accesCookie.Value = ""
-	accesCookie.Expires = time.Now().Add(-1)
-	accesCookie.HTTPOnly = true
-	// cookie.Secure = true
-
-	refreshCookie := new(fiber.Cookie)
-	refreshCookie.Name = structs.RefreshCookieName
-	refreshCookie.Value = ""
-	refreshCookie.Expires = time.Now().Add(-1)
-	refreshCookie.HTTPOnly = true
-	// cookie.Secure = true
-
 	h.Service.CleanSession(userID.(string))
 
-	ctx.Cookie(accesCookie)
+	accessCookie := newCookie(
+		structs.AccessCookieName,
+		"",
+		time.Now().Add(-1),
+	)
+
+	refreshCookie := newCookie(
+		structs.RefreshCookieName,
+		"",
+		time.Now().Add(-1),
+	)
+
+	ctx.Cookie(accessCookie)
 	ctx.Cookie(refreshCookie)
 	return ctx.Status(fiber.StatusOK).JSON(structs.SetResponse(fiber.StatusOK, "success"))
+}
+
+func (h AuthHandler) change(ctx *fiber.Ctx) error {
+	userID := ctx.Locals("userID")
+
+	passContainer := structs.PasswordsContainer{}
+
+	if err := ctx.BodyParser(&passContainer); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	}
+
+	if err := passContainer.Validate(); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	}
+
+	if err := h.Service.ChangePassword(ctx.UserContext(), userID.(string), passContainer, h.AuthConfig); err != nil {
+		if errors.Is(err, structs.ErrNotFound) {
+			return fiber.NewError(fiber.StatusBadRequest, "wrong current password")
+		}
+
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	}
+
+	return ctx.Status(fiber.StatusOK).JSON(structs.SetResponse(fiber.StatusOK, "success"))
+}
+
+func newCookie(name, value string, expire time.Time) *fiber.Cookie {
+	return &fiber.Cookie{
+		Name:     name,
+		Value:    value,
+		Expires:  expire,
+		Secure:   false,
+		HTTPOnly: true,
+	}
 }

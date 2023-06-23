@@ -12,6 +12,8 @@ import (
 
 type UserRepo interface {
 	FindEmailWithPasword(context.Context, structs.IdentityData) (string, error)
+	CheckUserIDWithPasword(context.Context, string, string) error
+	UpdatePassord(context.Context, string, string) error
 }
 
 type AuthService struct {
@@ -21,7 +23,8 @@ type AuthService struct {
 var inMemory = make(map[string]string)
 
 func (s AuthService) GetTokenPair(ctx context.Context, identity structs.IdentityData, cfg config.AuthConfig) (structs.TokenPair, error) {
-	identity.Password = structs.SHA256(identity.Password, cfg.Salt)
+	hashed := structs.SHA256(identity.Password, cfg.Salt)
+	identity.Password = hashed
 
 	userID, err := s.Repo.FindEmailWithPasword(ctx, identity)
 	if err != nil {
@@ -54,13 +57,14 @@ func (s AuthService) GetTokenPair(ctx context.Context, identity structs.Identity
 }
 
 func generateJWT(expire time.Time, signingKey, userID string) (string, error) {
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, structs.Claims{
-		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: expire.Unix(),
-			IssuedAt:  time.Now().Unix(),
-		},
-		UserID: userID,
-	})
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256,
+		structs.Claims{
+			StandardClaims: jwt.StandardClaims{
+				ExpiresAt: expire.Unix(),
+				IssuedAt:  time.Now().Unix(),
+			},
+			UserID: userID,
+		})
 
 	tokenValue, err := token.SignedString([]byte(signingKey))
 	if err != nil {
@@ -104,4 +108,20 @@ func (s AuthService) Refresh(refreshString, userID string, cfg config.AuthConfig
 	}
 
 	return tokenPair, nil
+}
+
+func (s AuthService) ChangePassword(ctx context.Context, userID string, container structs.PasswordsContainer, cfg config.AuthConfig) error {
+	fmt.Println(userID, container.CurrentPassword)
+	container.CurrentPassword = structs.SHA256(container.CurrentPassword, cfg.Salt)
+	container.NewPassword = structs.SHA256(container.NewPassword, cfg.Salt)
+
+	if err := s.Repo.CheckUserIDWithPasword(ctx, userID, container.CurrentPassword); err != nil {
+		return fmt.Errorf("error in CheckUserIDWithPasword(): %w", err)
+	}
+
+	if err := s.Repo.UpdatePassord(ctx, userID, container.NewPassword); err != nil {
+		return fmt.Errorf("pasword changing failed: %w", err)
+	}
+
+	return nil
 }

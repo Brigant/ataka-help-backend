@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/baza-trainee/ataka-help-backend/app/api/midlware"
 	"github.com/baza-trainee/ataka-help-backend/app/config"
@@ -15,7 +14,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/timeout"
 )
 
-const bodyLimit = 2 * 1024 * 1024
+const bodyLimit = 5 * 1024 * 1024
 
 type Server struct {
 	HTTPServer *fiber.App
@@ -69,10 +68,10 @@ func (s Server) initRoutes(app *fiber.App, h Handler, cfg config.Config) {
 
 	app.Static("/static", "./static")
 
-	app.Get("/cards", h.Card.getCards)
-	app.Post("/cards", identifyUser, h.Card.createCard)
-	app.Get("/cards/:id", h.Card.findCard)
-	app.Delete("/cards/:id", identifyUser, h.Card.deleteCard)
+	app.Get("/cards", timeout.NewWithContext(h.Card.getCards, cfg.Server.AppReadTimeout))
+	app.Post("/cards", identifyUser, timeout.NewWithContext(h.Card.createCard, cfg.Server.AppWriteTimeout))
+	app.Get("/cards/:id", timeout.NewWithContext(h.Card.findCard, cfg.Server.AppReadTimeout))
+	app.Delete("/cards/:id", identifyUser, timeout.NewWithContext(h.Card.deleteCard, cfg.Server.AppWriteTimeout))
 
 	app.Get("/partners", h.Partner.get)
 
@@ -80,18 +79,19 @@ func (s Server) initRoutes(app *fiber.App, h Handler, cfg config.Config) {
 	app.Post("/slider", identifyUser, h.Slider.createSlider)
 	app.Delete("/slider/:id", identifyUser, h.Slider.deleteSlide)
 
-	app.Put("/contacts", identifyUser, h.Contact.edit)
-	app.Get("/contacts", h.Contact.get)
+	app.Put("/contacts", identifyUser, timeout.NewWithContext(h.Contact.edit, cfg.Server.AppReadTimeout))
+	app.Get("/contacts", timeout.NewWithContext(h.Contact.get, cfg.Server.AppReadTimeout))
 
 	app.Get("/reports", h.Report.getReports)
 	app.Put("/reports", identifyUser, h.Report.updateReport)
 	app.Delete("/reports", identifyUser, h.Report.deleteReport)
 
-	app.Post("/feedback", h.Feedback.sendFedback)
+	app.Post("/feedback", timeout.NewWithContext(h.Feedback.sendFedback, cfg.Server.AppWriteTimeout))
 
-	app.Post("/auth/login", timeout.NewWithContext(h.Auth.login, 2*time.Second))
-	app.Post("/auth/logout", identifyUser, timeout.NewWithContext(h.Auth.logout, 2*time.Second))
+	app.Post("/auth/login", timeout.NewWithContext(h.Auth.login, cfg.Server.AppWriteTimeout))
+	app.Post("/auth/logout", identifyUser, timeout.NewWithContext(h.Auth.logout, cfg.Server.AppWriteTimeout))
 	app.Post("/auth/refresh", h.Auth.refresh)
+	app.Post("/auth/change", identifyUser, timeout.NewWithContext(h.Auth.change, cfg.Server.AppReadTimeout))
 }
 
 func corsConfig() cors.Config {
@@ -102,4 +102,3 @@ func corsConfig() cors.Config {
 		AllowMethods: "GET, POST, PUT, DELETE",
 	}
 }
-
