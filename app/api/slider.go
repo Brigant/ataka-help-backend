@@ -6,6 +6,7 @@ import (
 	"mime/multipart"
 	"time"
 
+	"github.com/baza-trainee/ataka-help-backend/app/config"
 	"github.com/baza-trainee/ataka-help-backend/app/logger"
 	"github.com/baza-trainee/ataka-help-backend/app/structs"
 	"github.com/gofiber/fiber/v2"
@@ -36,14 +37,14 @@ func NewSliderHandler(service SliderService, log *logger.Logger) Slider {
 	}
 }
 
-func (s Slider) getSlider(ctx *fiber.Ctx) error {
+func (s Slider) getSlider(ctx *fiber.Ctx, cfg config.Config) error {
 	chErr := make(chan error)
 
 	chWell := make(chan structs.SliderResponse)
 
 	ctxUser := ctx.UserContext()
 
-	ctxWithDeadline, cancel := context.WithDeadline(ctxUser, time.Now().Add(1*time.Second))
+	ctxWithDeadline, cancel := context.WithDeadline(ctxUser, time.Now().Add(cfg.Server.DeadlineTimer))
 
 	defer cancel()
 
@@ -67,10 +68,6 @@ func (s Slider) getSlider(ctx *fiber.Ctx) error {
 		close(chWell)
 	}(chErr, chWell)
 
-	/*
-		sync.WaitGroup had not added because select{} blocks main goroutine any way.
-	*/
-
 	select {
 	case result := <-chWell:
 		return ctx.Status(fiber.StatusOK).JSON(result)
@@ -81,7 +78,7 @@ func (s Slider) getSlider(ctx *fiber.Ctx) error {
 	}
 }
 
-func (s Slider) createSlide(ctx *fiber.Ctx) error {
+func (s Slider) createSlide(ctx *fiber.Ctx, cfg config.Config) error {
 	allowedFileExtentions := []string{"jpg", "jpeg", "webp", "png"}
 
 	chErr := make(chan error)
@@ -89,10 +86,11 @@ func (s Slider) createSlide(ctx *fiber.Ctx) error {
 	chWell := make(chan struct{})
 
 	const (
-		minTitle = 4
-		maxTitle = 300
-		minAlt   = 10
-		maxAlt   = 30
+		limitNumberItemsFile = 1
+		minTitle             = 4
+		maxTitle             = 300
+		minAlt               = 10
+		maxAlt               = 30
 	)
 
 	form, err := ctx.MultipartForm()
@@ -108,16 +106,16 @@ func (s Slider) createSlide(ctx *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "title is blank or out of range limits")
 	}
 
-	file := form.File["thumb"]
-
-	if file != nil {
-		s.log.Debugw("createSlide", "file-name", file[0].Filename, "file-size", file[0].Size)
-	}
-
-	if file == nil || !isAllowedFileExtention(allowedFileExtentions, file[0].Filename) {
-		s.log.Debugw("createSlide", "form.File", err.Error())
+	if len(form.File["thumb"]) < limitNumberItemsFile {
+		s.log.Debugw("createSlide", "form.File", "thumb is absent")
 
 		return fiber.NewError(fiber.StatusBadRequest, "thumb is absent")
+	}
+
+	file := form.File["thumb"]
+
+	if !isAllowedFileExtention(allowedFileExtentions, file[0].Filename) {
+		s.log.Debugw("createSlide", "file-name", file[0].Filename, "file-size", form.File["thumb"][0].Size)
 	}
 
 	alt := form.Value["alt"]
@@ -138,7 +136,7 @@ func (s Slider) createSlide(ctx *fiber.Ctx) error {
 
 	ctxUser := ctx.UserContext()
 
-	ctxWithDeadline, cancel := context.WithDeadline(ctxUser, time.Now().Add(1*time.Second))
+	ctxWithDeadline, cancel := context.WithDeadline(ctxUser, time.Now().Add(cfg.Server.DeadlineTimer))
 
 	defer cancel()
 
@@ -152,12 +150,8 @@ func (s Slider) createSlide(ctx *fiber.Ctx) error {
 		}
 	}(chErr, chWell)
 
-	/*
-		sync.WaitGroup had not added because select{} blocks main goroutine any way.
-	*/
-
 	select {
-	case _ = <-chWell:
+	case <-chWell:
 		return ctx.Status(fiber.StatusOK).JSON(structs.SetResponse(fiber.StatusOK, "success"))
 	case err := <-chErr:
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
@@ -166,7 +160,7 @@ func (s Slider) createSlide(ctx *fiber.Ctx) error {
 	}
 }
 
-func (s Slider) deleteSlide(ctx *fiber.Ctx) error {
+func (s Slider) deleteSlide(ctx *fiber.Ctx, cfg config.Config) error {
 	chErr := make(chan error)
 
 	chWell := make(chan struct{})
@@ -186,7 +180,7 @@ func (s Slider) deleteSlide(ctx *fiber.Ctx) error {
 
 	ctxUser := ctx.UserContext()
 
-	ctxWithDeadline, cancel := context.WithDeadline(ctxUser, time.Now().Add(1*time.Second))
+	ctxWithDeadline, cancel := context.WithDeadline(ctxUser, time.Now().Add(cfg.Server.DeadlineTimer))
 
 	defer cancel()
 
@@ -200,12 +194,8 @@ func (s Slider) deleteSlide(ctx *fiber.Ctx) error {
 		}
 	}(chErr, chWell)
 
-	/*
-		sync.WaitGroup had not added because select{} blocks main goroutine any way.
-	*/
-
 	select {
-	case _ = <-chWell:
+	case <-chWell:
 		return ctx.Status(fiber.StatusOK).JSON(structs.SetResponse(fiber.StatusOK, "success"))
 	case err := <-chErr:
 		if errors.Is(err, structs.ErrNoRowAffected) {

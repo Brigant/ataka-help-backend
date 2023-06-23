@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/baza-trainee/ataka-help-backend/app/config"
 	"github.com/baza-trainee/ataka-help-backend/app/logger"
 	"github.com/baza-trainee/ataka-help-backend/app/structs"
 	"github.com/gofiber/fiber/v2"
@@ -31,7 +32,7 @@ func NewParnerHandler(service PartnerService, log *logger.Logger) Partner {
 	}
 }
 
-func (p Partner) getPartners(ctx *fiber.Ctx) error {
+func (p Partner) getPartners(ctx *fiber.Ctx, cfg config.Config) error {
 	chErr := make(chan error)
 
 	chWell := make(chan structs.PartnerResponse)
@@ -47,7 +48,7 @@ func (p Partner) getPartners(ctx *fiber.Ctx) error {
 
 	ctxUser := ctx.UserContext()
 
-	ctxWithDeadline, cancel := context.WithDeadline(ctxUser, time.Now().Add(1*time.Second))
+	ctxWithDeadline, cancel := context.WithDeadline(ctxUser, time.Now().Add(cfg.Server.DeadlineTimer))
 
 	defer cancel()
 
@@ -73,10 +74,6 @@ func (p Partner) getPartners(ctx *fiber.Ctx) error {
 
 	}(chErr, chWell)
 
-	/*
-		sync.WaitGroup had not added because select{} blocks main goroutine any way.
-	*/
-
 	select {
 	case response := <-chWell:
 		return ctx.Status(fiber.StatusOK).JSON(response)
@@ -87,12 +84,13 @@ func (p Partner) getPartners(ctx *fiber.Ctx) error {
 	}
 }
 
-func (p Partner) createPartner(ctx *fiber.Ctx) error {
+func (p Partner) createPartner(ctx *fiber.Ctx, cfg config.Config) error {
 	allowedFileExtentions := []string{"jpg", "jpeg", "webp", "png"}
 
 	const (
-		minAlt = 10
-		maxAlt = 30
+		limitNumberItemsFile = 1
+		minAlt               = 10
+		maxAlt               = 30
 	)
 
 	chErr := make(chan error)
@@ -112,16 +110,16 @@ func (p Partner) createPartner(ctx *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "alt is blank or out of limits")
 	}
 
-	file := form.File["logo"]
-
-	if file != nil {
-		p.log.Debugw("createPartner", "file-name", file[0].Filename, "file-size", file[0].Size)
-	}
-
-	if file == nil || !isAllowedFileExtention(allowedFileExtentions, file[0].Filename) {
-		p.log.Debugw("createPartner", "form.File", err.Error())
+	if len(form.File["logo"]) < limitNumberItemsFile {
+		p.log.Debugw("createPartner", "form.File", "logo is absent")
 
 		return fiber.NewError(fiber.StatusBadRequest, "logo is absent")
+	}
+
+	file := form.File["logo"]
+
+	if !isAllowedFileExtention(allowedFileExtentions, file[0].Filename) {
+		p.log.Debugw("createPartner", "file-name", file[0].Filename, "file-size", file[0].Size)
 	}
 
 	size := file[0].Size
@@ -134,7 +132,7 @@ func (p Partner) createPartner(ctx *fiber.Ctx) error {
 
 	ctxUser := ctx.UserContext()
 
-	ctxWithDeadline, cancel := context.WithDeadline(ctxUser, time.Now().Add(1*time.Second))
+	ctxWithDeadline, cancel := context.WithDeadline(ctxUser, time.Now().Add(cfg.Server.DeadlineTimer))
 
 	defer cancel()
 
@@ -148,12 +146,8 @@ func (p Partner) createPartner(ctx *fiber.Ctx) error {
 		}
 	}(chErr, chWell)
 
-	/*
-		sync.WaitGroup had not added because select{} blocks main goroutine any way.
-	*/
-
 	select {
-	case _ = <-chWell:
+	case <-chWell:
 		return ctx.JSON(structs.SetResponse(http.StatusOK, "success"))
 	case err := <-chErr:
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
@@ -162,7 +156,7 @@ func (p Partner) createPartner(ctx *fiber.Ctx) error {
 	}
 }
 
-func (p Partner) deletePartner(ctx *fiber.Ctx) error {
+func (p Partner) deletePartner(ctx *fiber.Ctx, cfg config.Config) error {
 	chErr := make(chan error)
 
 	chWell := make(chan struct{})
@@ -182,7 +176,7 @@ func (p Partner) deletePartner(ctx *fiber.Ctx) error {
 
 	ctxUser := ctx.UserContext()
 
-	ctxWithDeadline, cancel := context.WithDeadline(ctxUser, time.Now().Add(1*time.Second))
+	ctxWithDeadline, cancel := context.WithDeadline(ctxUser, time.Now().Add(cfg.Server.DeadlineTimer))
 
 	defer cancel()
 
@@ -196,12 +190,8 @@ func (p Partner) deletePartner(ctx *fiber.Ctx) error {
 		}
 	}(chErr, chWell)
 
-	/*
-		sync.WaitGroup had not added because select{} blocks main goroutine any way.
-	*/
-
 	select {
-	case _ = <-chWell:
+	case <-chWell:
 		return ctx.Status(fiber.StatusOK).JSON(structs.SetResponse(fiber.StatusOK, "success"))
 	case err := <-chErr:
 		if errors.Is(err, structs.ErrNoRowAffected) {

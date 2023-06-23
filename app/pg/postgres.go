@@ -243,8 +243,8 @@ func (r Repo) SelectSlider(ctx context.Context) ([]structs.Slide, error) {
 	records := []structs.Slide{}
 
 	query := `SELECT id, title, thumb, alt, created, modified 
-			  FROM public.slider AS sld
-			  ORDER BY sld.created DESC;`
+			  FROM public.slider
+			  ORDER BY created DESC;`
 
 	rows, err := r.db.QueryxContext(ctx, query)
 	if err != nil {

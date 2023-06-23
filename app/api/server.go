@@ -52,7 +52,7 @@ func NewServer(cfg config.Config, handler Handler) *Server {
 
 	server.HTTPServer.Use(recover.New())
 
-	server.initRoutes(server.HTTPServer, handler)
+	server.initRoutes(server.HTTPServer, handler, cfg)
 
 	return server
 }
@@ -61,7 +61,7 @@ func (s *Server) Shutdown(ctx context.Context) error {
 	return fmt.Errorf("shutdown error: %w", s.HTTPServer.ShutdownWithContext(ctx))
 }
 
-func (s Server) initRoutes(app *fiber.App, h Handler) {
+func (s Server) initRoutes(app *fiber.App, h Handler, cfg config.Config) {
 	app.Static("/static", "./static")
 
 	app.Get("/cards", h.Card.getCards)
@@ -69,13 +69,55 @@ func (s Server) initRoutes(app *fiber.App, h Handler) {
 	app.Get("/cards/:id", h.Card.findCard)
 	app.Delete("/cards/:id", h.Card.deleteCard)
 
-	app.Get("/partners", h.Partner.getPartners)
-	app.Post("/partners", h.Partner.createPartner)
-	app.Delete("/partners/:id", h.Partner.deletePartner)
+	app.Get("/partners", func(ctx *fiber.Ctx) error {
+		err := h.Partner.getPartners(ctx, cfg)
+		if err != nil {
+			return err
+		}
 
-	app.Get("/slider", h.Slider.getSlider)
-	app.Post("/slider", h.Slider.createSlide)
-	app.Delete("/slider/:id", h.Slider.deleteSlide)
+		return nil
+	})
+	app.Post("/partners", func(ctx *fiber.Ctx) error {
+		err := h.Partner.createPartner(ctx, cfg)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+	app.Delete("/partners/:id", func(ctx *fiber.Ctx) error {
+		err := h.Partner.deletePartner(ctx, cfg)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	app.Get("/slider", func(ctx *fiber.Ctx) error {
+		err := h.Slider.getSlider(ctx, cfg)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+	app.Post("/slider", func(ctx *fiber.Ctx) error {
+		err := h.Slider.createSlide(ctx, cfg)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+	app.Delete("/slider/:id", func(ctx *fiber.Ctx) error {
+		err := h.Slider.deleteSlide(ctx, cfg)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
 
 	app.Put("/contacts", h.Contact.edit)
 	app.Get("/contacts", h.Contact.get)
