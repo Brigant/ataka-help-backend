@@ -101,8 +101,88 @@ func (r Repo) CountRowsTable(ctx context.Context, table string) (int, error) {
 	}
 }
 
-func (r Repo) SelectAllPartners() (string, error) {
-	return "some partners from db", nil
+func (r Repo) SelectAllPartners(ctx context.Context, params structs.PartnerQueryParameters) ([]structs.Partner, error) {
+	var resultRows *sql.Rows
+
+	partners := []structs.Partner{}
+
+	if params.Limit > 0 && params.Offset >= 0 {
+		query := `SELECT id, alt, logo, created, modified
+				  FROM public.partners as p
+				  ORDER BY p.created DESC
+				  Limit $1
+				  OFFSET $2;`
+
+		rows, err := r.db.QueryContext(ctx, query, params.Limit, params.Offset)
+		if err != nil {
+			return nil, fmt.Errorf("an error occurs while QueryContext: %w", err)
+		}
+
+		resultRows = rows
+	} else {
+		query := `SELECT id, alt, logo, created, modified
+				  FROM public.partners as p
+				  ORDER BY p.created DESC;`
+
+		rows, err := r.db.QueryContext(ctx, query)
+		if err != nil {
+			return nil, fmt.Errorf("an error occurs while QueryContext: %w", err)
+		}
+
+		resultRows = rows
+	}
+
+	defer resultRows.Close()
+
+	for resultRows.Next() {
+		partner := structs.Partner{}
+
+		if err := resultRows.Scan(&partner.ID, &partner.Alt, &partner.Logo, &partner.Created, &partner.Modified); err != nil {
+			return nil, fmt.Errorf("an error occurs while resultRows.Scan(): %w", err)
+		}
+
+		partners = append(partners, partner)
+	}
+
+	if err := resultRows.Err(); err != nil {
+		return nil, fmt.Errorf("an error occurs while resultRows.Err(): %w", err)
+	}
+
+	return partners, nil
+}
+
+func (r Repo) InsertPartner(ctx context.Context, partner structs.Partner, chWell chan struct{}) error {
+	query := `INSERT INTO public.partners (alt, logo)
+			  VALUES($1, $2);`
+
+	result, err := r.db.ExecContext(ctx, query, partner.Alt, partner.Logo)
+	if err != nil {
+		pqError := new(pq.Error)
+		if errors.As(err, &pqError) && pqError.Code.Name() == ErrCodeForeignKeyViolation {
+			return structs.ErrForeignViolation
+		}
+
+		if errors.As(err, &pqError) && pqError.Code.Name() == ErrCodeUniqueViolation {
+			return structs.ErrUniqueRestriction
+		}
+
+		return fmt.Errorf("error in ExecContext: %w", err)
+	}
+
+	affectedRows, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("the error is in RowsAffected: %w", err)
+	}
+
+	if affectedRows != expectedAffectedRow {
+		return structs.ErrNoRowAffected
+	}
+
+	chWell <- struct{}{}
+
+	close(chWell)
+
+	return nil
 }
 
 func (r Repo) SelectSlider(ctx context.Context) ([]structs.Slide, error) {
@@ -137,7 +217,7 @@ func (r Repo) SelectSlider(ctx context.Context) ([]structs.Slide, error) {
 }
 
 func (r Repo) InsertSlider(ctx context.Context, slider structs.Slide, chWell chan struct{}) error {
-	query := `INSERT INTO slider (title, thumb, alt)
+	query := `INSERT INTO public.slider (title, thumb, alt)
 			  VALUES($1, $2, $3);`
 
 	result, err := r.db.ExecContext(ctx, query, slider.Title, slider.Thumb, slider.Alt)
@@ -154,12 +234,12 @@ func (r Repo) InsertSlider(ctx context.Context, slider structs.Slide, chWell cha
 		return fmt.Errorf("error in ExecContext: %w", err)
 	}
 
-	effectedRows, err := result.RowsAffected()
+	affectedRows, err := result.RowsAffected()
 	if err != nil {
 		return fmt.Errorf("the error is in RowsAffected: %w", err)
 	}
 
-	if effectedRows != expectedAffectedRow {
+	if affectedRows != expectedAffectedRow {
 		return structs.ErrNoRowAffected
 	}
 
@@ -198,6 +278,36 @@ func (r Repo) DelSlideByID(ctx context.Context, ID string) (string, error) {
 	}
 
 	return objectPath.Thumb, nil
+}
+
+func (r Repo) DelPartnerByID(ctx context.Context, ID string) (string, error) {
+	getQuery := `SELECT logo FROM public.partners WHERE id = $1`
+
+	objectPath := struct {
+		Logo string `db:"logo"`
+	}{}
+
+	if err := r.db.GetContext(ctx, &objectPath, getQuery, ID); err != nil {
+		return "", fmt.Errorf("error in GetContext(): %w", err)
+	}
+
+	deleteQuery := `DELETE FROM public.partners WHERE id=$1`
+
+	sqlResult, err := r.db.ExecContext(ctx, deleteQuery, ID)
+	if err != nil {
+		return "", fmt.Errorf("error in ExecContext(): %w", err)
+	}
+
+	affectedRows, err := sqlResult.RowsAffected()
+	if err != nil {
+		return "", fmt.Errorf("the error is in RowsAffected: %w", err)
+	}
+
+	if affectedRows != expectedAffectedRow {
+		return "", structs.ErrNoRowAffected
+	}
+
+	return objectPath.Logo, nil
 }
 
 func (r Repo) FindEmailWithPasword(ctx context.Context, identity structs.IdentityData) (string, error) {

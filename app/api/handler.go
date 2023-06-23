@@ -9,7 +9,7 @@ import (
 
 const (
 	fileLimit     = 2 * 1024 * 1024
-	defaultLimit  = 6
+	defaultLimit  = 0
 	defaultOffset = 0
 )
 
@@ -56,4 +56,17 @@ func isAllowedFileExtention(allowedList []string, fileName string) bool {
 	}
 
 	return false
+}
+
+func symbolsCounter(sentence string) int {
+	runes := []rune(sentence)
+
+	var counter int
+
+	for _, k := range runes {
+		_ = k
+		counter++
+	}
+
+	return counter
 }

@@ -73,7 +73,9 @@ func (s Server) initRoutes(app *fiber.App, h Handler, cfg config.Config) {
 	app.Get("/cards/:id", timeout.NewWithContext(h.Card.findCard, cfg.Server.AppReadTimeout))
 	app.Delete("/cards/:id", identifyUser, timeout.NewWithContext(h.Card.deleteCard, cfg.Server.AppWriteTimeout))
 
-	app.Get("/partners", h.Partner.get)
+	app.Get("/partners", h.Partner.getPartners)
+	app.Post("/partners", h.Partner.createPartner)
+	app.Delete("/partners/:id", h.Partner.deletePartner)
 
 	app.Get("/slider", h.Slider.getSlider)
 	app.Post("/slider", identifyUser, h.Slider.createSlider)
