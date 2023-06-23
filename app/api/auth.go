@@ -71,6 +71,8 @@ func (h AuthHandler) login(ctx *fiber.Ctx) error {
 		tokenPair.RefresgExpire,
 	)
 
+	refreshCookie.Path = "/auth/refresh"
+
 	ctx.Cookie(refreshCookie)
 
 	return ctx.Status(fiber.StatusOK).JSON(structs.SetResponse(fiber.StatusOK, "logined"))
@@ -104,6 +106,8 @@ func (h AuthHandler) refresh(ctx *fiber.Ctx) error {
 		tokenPair.RefreshToken,
 		tokenPair.RefresgExpire,
 	)
+
+	refreshCookie.Path = "/auth/refresh"
 
 	ctx.Cookie(accessCookie)
 	ctx.Cookie(refreshCookie)
