@@ -3,6 +3,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -33,10 +34,14 @@ type SMTP struct {
 }
 
 type Config struct {
-	Server          Server
-	DB              Postgres
-	SMTP            SMTP
-	LogLevel        string        `env:"LOG_LEVEL" envDefault:"INFO"`
+	Server   Server
+	DB       Postgres
+	Auth     AuthConfig
+	SMTP     SMTP
+	LogLevel string `env:"LOG_LEVEL" envDefault:"INFO"`
+}
+
+type AuthConfig struct {
 	Salt            string        `env:"APP_SALT,notEmpty"`
 	SigningKey      string        `env:"SIGNING_KEY,notEmpty"`
 	AccessTokenTTL  time.Duration `env:"ACCESS_TOKEN_TTL" envDefault:"15m"`
@@ -53,6 +58,8 @@ const (
 var errNotAllowedLoggelLevel = errors.New("not allowed logger level")
 
 func InitConfig() (Config, error) {
+	fmt.Println(os.Getenv("APP_PORT"))
+
 	cfg := Config{}
 
 	if err := env.Parse(&cfg); err != nil {

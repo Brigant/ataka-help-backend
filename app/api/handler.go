@@ -20,6 +20,7 @@ type ServiceInterfaces interface {
 	ReportService
 	ContactService
 	FeedbackService
+	AutService
 }
 
 type Handler struct {
@@ -29,6 +30,7 @@ type Handler struct {
 	Report   ReportHandler
 	Contact  ContactHandler
 	Feedback FeedbackHandler
+	Auth     AuthHandler
 }
 
 func NewHandler(services ServiceInterfaces, log *logger.Logger, cfg config.Config) Handler {
@@ -39,6 +41,7 @@ func NewHandler(services ServiceInterfaces, log *logger.Logger, cfg config.Confi
 		Contact:  NewContactHandler(services, log),
 		Slider:   NewSliderHandler(services, log, cfg.Server),
 		Feedback: NewFeedbackHandler(services, log),
+		Auth:     NewAuthHandler(services, log, cfg.Auth),
 	}
 }
 
@@ -58,12 +61,5 @@ func isAllowedFileExtention(allowedList []string, fileName string) bool {
 func symbolsCounter(sentence string) int {
 	runes := []rune(sentence)
 
-	var counter int
-
-	for _, k := range runes {
-		_ = k
-		counter++
-	}
-
-	return counter
+	return len(runes)
 }
