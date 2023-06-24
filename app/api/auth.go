@@ -168,5 +168,6 @@ func newCookie(name, value string, expire time.Time) *fiber.Cookie {
 		Expires:  expire,
 		Secure:   false,
 		HTTPOnly: true,
+		SameSite: "none",
 	}
 }
