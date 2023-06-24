@@ -82,14 +82,6 @@ func (r Repo) SelectCardByID(ctx context.Context, id string) (structs.Card, erro
 
 	card := structs.Card{}
 
-	if err := r.db.GetContext(ctx, &card, query, id); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return structs.Card{}, structs.ErrNotFound
-		}
-
-		return structs.Card{}, fmt.Errorf("error in GetContext(): %w", err)
-	}
-
 	select {
 	case <-ctx.Done():
 		return card, structs.ErrTimeout
@@ -112,21 +104,8 @@ func (r Repo) SelectCardByID(ctx context.Context, id string) (structs.Card, erro
 }
 
 func (r Repo) DelCardByID(ctx context.Context, id string) error {
-	query := `DELETE FROM public.cards WHERE id=$1`
-
-	sqlResult, err := r.db.ExecContext(ctx, query, id)
-	if err != nil {
-		return fmt.Errorf("error in ExecContext(): %w", err)
-	}
-
-	affectedRows, err := sqlResult.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("the error is in RowsAffected: %w", err)
-	}
-
-	if affectedRows != expectedAffectedRow {
-		return structs.ErrNoRowAffected
-	}
+	const expectedAffectedRow = 1
+	query := `DELETE FROM public.cards WHERE id=$1 Returning id`
 
 	select {
 	case <-ctx.Done():
@@ -142,12 +121,12 @@ func (r Repo) DelCardByID(ctx context.Context, id string) error {
 			return fmt.Errorf("error in ExecContext(): %w", err)
 		}
 
-		affectedRows, err := sqlResult.RowsAffected()
+		rowsAffected, err := sqlResult.RowsAffected()
 		if err != nil {
-			return fmt.Errorf("the error is in RowsAffected: %w", err)
+			return fmt.Errorf("error in RowsAffected(): %w", err)
 		}
 
-		if affectedRows != expectedAffectedRow {
+		if rowsAffected < expectedAffectedRow {
 			return structs.ErrNoRowAffected
 		}
 
