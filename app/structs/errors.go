@@ -15,4 +15,5 @@ var (
 	ErrTimeout              = errors.New("timeout")
 	ErrEmptyField           = errors.New("field shoud be not empty")
 	ErrNotMatch             = errors.New("the pasword doesn't match")
+	ErrNoSession            = errors.New("there is no such session")
 )

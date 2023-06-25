@@ -83,6 +83,10 @@ func (s AuthService) CleanSession(userID string) {
 }
 
 func (s AuthService) Refresh(refreshString, userID string, cfg config.AuthConfig) (structs.TokenPair, error) {
+	if userID != inMemory[refreshString] {
+		return structs.TokenPair{}, structs.ErrNoSession
+	}
+
 	delete(inMemory, refreshString)
 
 	accessExpire := time.Now().Add(cfg.AccessTokenTTL)
