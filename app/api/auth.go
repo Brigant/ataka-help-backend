@@ -92,6 +92,10 @@ func (h AuthHandler) refresh(ctx *fiber.Ctx) error {
 
 	tokenPair, err := h.Service.Refresh(refreshString, userID, h.AuthConfig)
 	if err != nil {
+		if errors.Is(err, structs.ErrNoSession) {
+			return fiber.NewError(fiber.StatusUnauthorized, err.Error())
+		}
+
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
@@ -131,7 +135,7 @@ func (h AuthHandler) logout(ctx *fiber.Ctx) error {
 		"",
 		time.Now().Add(-1),
 	)
-
+	refreshCookie.Path = "/auth/refresh"
 	ctx.Cookie(accessCookie)
 	ctx.Cookie(refreshCookie)
 	return ctx.Status(fiber.StatusOK).JSON(structs.SetResponse(fiber.StatusOK, "success"))
