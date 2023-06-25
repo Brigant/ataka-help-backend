@@ -98,7 +98,7 @@ func (r Repo) SelectAllPartners(ctx context.Context, params structs.PartnerQuery
 	partners := []structs.Partner{}
 
 	if params.Limit > 0 && params.Offset >= 0 {
-		query := `SELECT id, alt, logo, created, modified
+		query := `SELECT id, alt, thumb, created, modified
 				  FROM public.partners as p
 				  ORDER BY p.created DESC
 				  Limit $1
@@ -111,7 +111,7 @@ func (r Repo) SelectAllPartners(ctx context.Context, params structs.PartnerQuery
 
 		resultRows = rows
 	} else {
-		query := `SELECT id, alt, logo, created, modified
+		query := `SELECT id, alt, thumb, created, modified
 				  FROM public.partners as p
 				  ORDER BY p.created DESC;`
 
@@ -128,7 +128,7 @@ func (r Repo) SelectAllPartners(ctx context.Context, params structs.PartnerQuery
 	for resultRows.Next() {
 		partner := structs.Partner{}
 
-		if err := resultRows.Scan(&partner.ID, &partner.Alt, &partner.Logo, &partner.Created, &partner.Modified); err != nil {
+		if err := resultRows.Scan(&partner.ID, &partner.Alt, &partner.Thumb, &partner.Created, &partner.Modified); err != nil {
 			return nil, fmt.Errorf("an error occurs while resultRows.Scan(): %w", err)
 		}
 
@@ -143,10 +143,10 @@ func (r Repo) SelectAllPartners(ctx context.Context, params structs.PartnerQuery
 }
 
 func (r Repo) InsertPartner(ctx context.Context, partner structs.Partner, chWell chan struct{}) error {
-	query := `INSERT INTO public.partners (alt, logo)
+	query := `INSERT INTO public.partners (alt, thumb)
 			  VALUES($1, $2);`
 
-	result, err := r.db.ExecContext(ctx, query, partner.Alt, partner.Logo)
+	result, err := r.db.ExecContext(ctx, query, partner.Alt, partner.Thumb)
 	if err != nil {
 		pqError := new(pq.Error)
 		if errors.As(err, &pqError) && pqError.Code.Name() == ErrCodeForeignKeyViolation {
@@ -180,8 +180,8 @@ func (r Repo) SelectSlider(ctx context.Context) ([]structs.Slide, error) {
 	records := []structs.Slide{}
 
 	query := `SELECT id, title, thumb, alt, created, modified 
-			  FROM public.slider AS sld
-			  ORDER BY sld.created DESC;`
+			  FROM public.slider
+			  ORDER BY created DESC;`
 
 	rows, err := r.db.QueryxContext(ctx, query)
 	if err != nil {
@@ -272,10 +272,10 @@ func (r Repo) DelSlideByID(ctx context.Context, ID string) (string, error) {
 }
 
 func (r Repo) DelPartnerByID(ctx context.Context, ID string) (string, error) {
-	getQuery := `SELECT logo FROM public.partners WHERE id = $1`
+	getQuery := `SELECT thumb FROM public.partners WHERE id = $1`
 
 	objectPath := struct {
-		Logo string `db:"logo"`
+		Thumb string `db:"thumb"`
 	}{}
 
 	if err := r.db.GetContext(ctx, &objectPath, getQuery, ID); err != nil {
@@ -298,5 +298,5 @@ func (r Repo) DelPartnerByID(ctx context.Context, ID string) (string, error) {
 		return "", structs.ErrNoRowAffected
 	}
 
-	return objectPath.Logo, nil
+	return objectPath.Thumb, nil
 }

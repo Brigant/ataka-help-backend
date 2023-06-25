@@ -33,15 +33,15 @@ type Handler struct {
 	Auth     AuthHandler
 }
 
-func NewHandler(services ServiceInterfaces, log *logger.Logger, cfg config.AuthConfig) Handler {
+func NewHandler(services ServiceInterfaces, log *logger.Logger, cfg config.Config) Handler {
 	return Handler{
 		Card:     NewCardsHandler(services, log),
-		Partner:  NewParnerHandler(services, log),
+		Partner:  NewPartnerHandler(services, log, cfg.Server),
 		Report:   NewReportHandler(services, log),
 		Contact:  NewContactHandler(services, log),
-		Slider:   NewSliderHandler(services, log),
+		Slider:   NewSliderHandler(services, log, cfg.Server),
 		Feedback: NewFeedbackHandler(services, log),
-		Auth:     NewAuthHandler(services, log, cfg),
+		Auth:     NewAuthHandler(services, log, cfg.Auth),
 	}
 }
 
