@@ -87,7 +87,7 @@ func (p Partner) getPartners(ctx *fiber.Ctx) error {
 }
 
 func (p Partner) createPartner(ctx *fiber.Ctx) error {
-	allowedFileExtentions := []string{"jpg", "jpeg", "webp", "png"}
+	allowedFileExtentions := []string{"jpg", "jpeg", "webp", "png", "svg"}
 
 	const (
 		limitNumberItemsFile = 1
@@ -112,13 +112,13 @@ func (p Partner) createPartner(ctx *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "alt is blank or out of limits")
 	}
 
-	if len(form.File["logo"]) < limitNumberItemsFile {
-		p.log.Debugw("createPartner", "form.File", "logo is absent")
+	if len(form.File["thumb"]) < limitNumberItemsFile {
+		p.log.Debugw("createPartner", "form.File", "thumb is absent")
 
-		return fiber.NewError(fiber.StatusBadRequest, "logo is absent")
+		return fiber.NewError(fiber.StatusBadRequest, "thumb is absent")
 	}
 
-	file := form.File["logo"]
+	file := form.File["thumb"]
 
 	if !isAllowedFileExtention(allowedFileExtentions, file[0].Filename) {
 		p.log.Debugw("createPartner", "file-name", file[0].Filename, "file-size", file[0].Size)

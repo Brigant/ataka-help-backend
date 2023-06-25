@@ -9,7 +9,7 @@ import (
 type Partner struct {
 	ID       uuid.UUID `json:"id" db:"id"`
 	Alt      string    `json:"alt" db:"alt"`
-	Logo     string    `json:"logo" db:"logo"`
+	Thumb    string    `json:"thumb" db:"thumb"`
 	Created  time.Time `json:"created" db:"created"`
 	Modified time.Time `json:"modified" db:"modified"`
 }

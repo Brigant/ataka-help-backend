@@ -1,7 +1,7 @@
 CREATE TABLE "partners" (
   "id" uuid DEFAULT gen_random_uuid() NOT NULL,
   "alt" VARCHAR(30) NOT NULL,
-  "logo" VARCHAR(255) NOT NULL,
+  "thumb" VARCHAR(255) NOT NULL,
   "created" Timestamp With Time Zone NOT NULL DEFAULT NOW(),
   "modified" Timestamp With Time Zone NOT NULL DEFAULT NOW(),
   PRIMARY KEY ("id"),
