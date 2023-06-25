@@ -3,6 +3,7 @@ package api
 import (
 	"strings"
 
+	"github.com/baza-trainee/ataka-help-backend/app/config"
 	"github.com/baza-trainee/ataka-help-backend/app/logger"
 )
 
@@ -19,6 +20,7 @@ type ServiceInterfaces interface {
 	ReportService
 	ContactService
 	FeedbackService
+	AutService
 }
 
 type Handler struct {
@@ -28,16 +30,18 @@ type Handler struct {
 	Report   ReportHandler
 	Contact  ContactHandler
 	Feedback FeedbackHandler
+	Auth     AuthHandler
 }
 
-func NewHandler(services ServiceInterfaces, log *logger.Logger) Handler {
+func NewHandler(services ServiceInterfaces, log *logger.Logger, cfg config.Config) Handler {
 	return Handler{
 		Card:     NewCardsHandler(services, log),
-		Partner:  NewParnerHandler(services, log),
+		Partner:  NewPartnerHandler(services, log, cfg.Server),
 		Report:   NewReportHandler(services, log),
 		Contact:  NewContactHandler(services, log),
-		Slider:   NewSliderHandler(services, log),
+		Slider:   NewSliderHandler(services, log, cfg.Server),
 		Feedback: NewFeedbackHandler(services, log),
+		Auth:     NewAuthHandler(services, log, cfg.Auth),
 	}
 }
 
@@ -57,12 +61,5 @@ func isAllowedFileExtention(allowedList []string, fileName string) bool {
 func symbolsCounter(sentence string) int {
 	runes := []rune(sentence)
 
-	var counter int
-
-	for _, k := range runes {
-		_ = k
-		counter++
-	}
-
-	return counter
+	return len(runes)
 }

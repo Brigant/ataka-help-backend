@@ -36,11 +36,11 @@ func (s PartnersService) ReturnPartners(ctx context.Context, params structs.Part
 }
 
 func (p PartnersService) SavePartner(ctx context.Context, form *multipart.Form, chWell chan struct{}) error {
-	file := form.File["logo"][0]
+	file := form.File["thumb"][0]
 
 	partner := structs.Partner{
-		Alt:  form.Value["alt"][0],
-		Logo: uniqueFilePath(file.Filename, uploadDirectory),
+		Alt:   form.Value["alt"][0],
+		Thumb: uniqueFilePath(file.Filename, uploadDirectory),
 	}
 
 	fileOpened, err := file.Open()
@@ -48,7 +48,7 @@ func (p PartnersService) SavePartner(ctx context.Context, form *multipart.Form, 
 		return fmt.Errorf("error happens while file.Open(): %w", err)
 	}
 
-	osFile, err := os.OpenFile(partner.Logo, os.O_WRONLY|os.O_CREATE, filePermition)
+	osFile, err := os.OpenFile(partner.Thumb, os.O_WRONLY|os.O_CREATE, filePermition)
 	if err != nil {
 		return fmt.Errorf("error happens while os.OpenFile(): %w", err)
 	}
@@ -61,7 +61,7 @@ func (p PartnersService) SavePartner(ctx context.Context, form *multipart.Form, 
 	}
 
 	if err := p.Repo.InsertPartner(ctx, partner, chWell); err != nil {
-		if err := os.Remove(partner.Logo); err != nil {
+		if err := os.Remove(partner.Thumb); err != nil {
 			return fmt.Errorf("error happens while remove file: %w", err)
 		}
 
