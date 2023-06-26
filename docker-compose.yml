@@ -35,6 +35,8 @@ services:
       restart: unless-stopped
       ports:
         - ${APP_PORT}:${APP_PORT}
+      volumes:
+        - ./static:/opt/static
       depends_on:
         db:
           condition: service_healthy
