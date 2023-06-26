@@ -15,5 +15,6 @@ FROM alpine:3.18
 WORKDIR /opt 
 
 COPY --from=builder-prod /opt/runner /opt/.env /opt/
+COPY --from=builder-prod /opt/app/services/template  /opt/app/services/template
 
 ENTRYPOINT /opt/runner
