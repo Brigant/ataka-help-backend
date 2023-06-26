@@ -19,3 +19,22 @@
 
 # Go workspace file
 go.work
+
+# Seccure files
+.env
+config.yml
+config.yaml
+
+# IDE files
+.vsconfig
+.vscode
+
+# Coverage files
+coverage.*
+
+# Uploads files
+static/uploads/*.* 
+!.gitkeep
+
+# Directories
+vendor

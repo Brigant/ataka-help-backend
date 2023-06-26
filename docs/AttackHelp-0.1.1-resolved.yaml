@@ -4,7 +4,7 @@ info:
     This is a sample Attacka Help server.  You can find
     out more about protject at the our
     [discord](https://discord.gg/GXSGbyQ3) server
-  version: "0.0.1"
+  version: "0.1.1"
   title: Swagger Attacka Help
   contact:
     email: sergeyjuly@gmail.com
@@ -12,25 +12,23 @@ info:
     name: Apache 2.0 or MIT or any other (We should choose)
     url: "http://www.apache.org/licenses/LICENSE-2.0.html"
 servers:
-  # Added by API Auto Mocking Plugin
-  # Added by API Auto Mocking Plugin
-  - description: SwaggerHub API Auto Mocking
-    url: https://virtserver.swaggerhub.com/SERGEYJULY/AttackHelp/0.0.1
   - description: For now only local server is possible
     url: "http://localhost:7000"
 tags:
   - name: cards
     description: Card is the main entity of the information carier.
-  - name: users
+  - name: auth
     description: Operations about user authorization.
-  - name: categories
-    description: It describes the operations which are possible to execute over the category entity.
   - name: feedback
     description: This is the endpoint through which the user can fill out the form and send feedback.
   - name: slider
     description: This is the endpoint to get the images for the main page slider.
   - name: partners
     description: This is the endpoint through which you need to get partner logos to the main page. The administrator can also change them.
+  - name: reports
+    description: This is the endpoint through which the administrator should upload the document with the activity report.
+  - name: contacts
+    description: Alow to get and set contacts info
 paths:
   /cards:
     get:
@@ -38,6 +36,9 @@ paths:
         - cards
       summary: Returns the cards array
       operationId: getAllCards
+      parameters:
+        - $ref: "#/components/parameters/offset"
+        - $ref: "#/components/parameters/limit"
       responses:
         "200":
           description: A successful response.
@@ -49,7 +50,10 @@ paths:
                   status: 
                     type: integer
                     example: 200
-                  data:
+                  total:
+                    type: integer
+                    example: 14
+                  cards:
                     type: array
                     items:
                       $ref: "#/components/schemas/Card"
@@ -62,51 +66,46 @@ paths:
       summary: Add a new card to the store
       operationId: addCard
       requestBody:
-        $ref: "#/components/requestBodies/Card"
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - "thumb"
+                - "title"
+                - "alt"
+                - "description"
+              properties:
+                thumb:
+                  type: string
+                  format: base64
+                title:
+                  type: string
+                  minLength: 3
+                  maxLength: 300
+                alt:
+                  type: string
+                description:
+                  required:
+                    - "items"
+                  type: array
+                  items:
+                    type: string  
+            encoding:
+              thumb:
+                contentType: image/png, image/jpeg, image.jpg, image.webp      
       responses:
         "200": {$ref: "#/components/responses/Success"}
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "500": { $ref: "#/components/responses/InternalError" }
       security:
-        - BearerAuth: []
-  
-  /cards/findByCategory:
-    get:
-      tags:
-        - cards
-      summary: Finds by category
-      description: Multiple status values can be provided with comma separated strings
-      operationId: findByCategory
-      parameters:
-        - name: categories
-          in: query
-          description: Status values that need to be considered for filter
-          required: true
-          explode: true
-          schema:
-            type: array
-            items:
-              type: string
-      responses:
-        "200":
-          description: successful operation
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Card"
-        "400": { $ref: "#/components/responses/BadRequest" }
-        "404": { $ref: "#/components/responses/NotFound" }
-        "500": { $ref: "#/components/responses/InternalError" }
-  
+        -  accessCookieAuth: []
   /cards/{id}:
     get:
       tags:
         - cards
       summary: Find card by ID
-      description: Returns a single card
       operationId: getCardById
       parameters:
         - $ref: "#/components/parameters/id"
@@ -120,23 +119,7 @@ paths:
         "400": { $ref: "#/components/responses/BadRequest" }
         "404": { $ref: "#/components/responses/NotFound"}
         "500": { $ref: "#/components/responses/InternalError" }
-    put:
-      tags:
-        - cards
-      summary: Update an existing card
-      operationId: updateCard
-      parameters:
-        - $ref: "#/components/parameters/id"
-      requestBody:
-        $ref: "#/components/requestBodies/Card"
-      responses:
-        "200": {$ref: "#/components/responses/Success"}
-        "400": { $ref: "#/components/responses/BadRequest" }
-        "401": { $ref: "#/components/responses/Unauthorized" }
-        "404": { $ref: "#/components/responses/NotFound" }
-        "500": { $ref: "#/components/responses/InternalError" }
-      security:
-        - BearerAuth: []
+
     delete:
       tags:
         - cards
@@ -151,176 +134,137 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/InternalError" }
       security:
-        - BearerAuth: []
+        -  accessCookieAuth: []
   
-  /users:
+  /auth/login:
     post:
       tags:
-        - users
-      summary: Create user
-      description: This can only be done by the logged in user.
-      operationId: createUser
+        - auth
+      summary: Logs in and returns the authentication  cookies
+      operationId: loginUser
       requestBody:
+        required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/User"
-        description: Created user object
-        required: true
+              type: object
+              required:
+                - login
+                - password
+              properties:
+                login:
+                  type: string
+                  format: email
+                  example: DaenerysTargaryen@gmail.com
+                password:
+                  type: string
+                  format: password
+                  example: password1234
       responses:
-        "200": { $ref: "#/components/responses/Success" }
+        "200":
+          description: >
+            Successfully authenticated.
+            The endpoint returns two named cookies `access-cookie` 
+            and `refresh-cookie`. The `access-cookie` You need to include 
+            this cookie in subsequent requests. And the `refresh-cookie` 
+            You are required for refresh requests.
+          headers: 
+            Set-Cookie:
+              schema: 
+                type: string
+                example: access-cookie=abcde12345; HttpOnly
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
-        "409": { $ref: "#/components/responses/Conflict" }
-        "500": { $ref: "#/components/responses/InternalError" }
-      security:
-        - BearerAuth: []
-  
-  /auth/login:
-    get:
-      tags:
-        - users
-      summary: Logs user into the system
-      operationId: loginUser
-      parameters:
-        - name: login
-          in: query
-          description: The users email for login
-          required: true
-          schema:
-            type: string
-            format: email
-        - name: password
-          in: query
-          description: The password for login in clear text
-          required: true
-          schema:
-            type: string
-            format: password
-      responses:
-        "200": 
-          description: A successful response.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status: 
-                    type: integer
-                    example: 200
-                  data:
-                    $ref: "#/components/schemas/TokenPair"
-        "400": { $ref: "#/components/responses/BadRequest" }
-        "500": { $ref: "#/components/responses/InternalError" }
-  
+        "500": { $ref: "#/components/responses/InternalError" }  
   /auth/logout:
     get:
       tags:
-        - users
+        - auth
       summary: Logs out current logged in user session
       operationId: logoutUser
       responses:
         "200": { $ref: "#/components/responses/Success" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "500": { $ref: "#/components/responses/InternalError" }
-      security:
-        - BearerAuth: []
-  
-  /auth/change:
-    get:
-      tags:
-        - users
-      summary:  Потрібно придумами яким чином змінювати пароль!!
-      operationId: changePassword
-      responses:
-        "200": { $ref: "#/components/responses/Success" }
-        "401": { $ref: "#/components/responses/Unauthorized" }
-        "500": { $ref: "#/components/responses/InternalError" }
-  
-  /categories:
-    get:
-      tags:
-        - categories
-      summary:  Returns an array of the categories
-      operationId: getAllCategories
-      responses:
-        "200":
-          description: A successful response.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status: 
-                    type: integer
-                    example: 200
-                  data:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/Category"
-        "400": { $ref: "#/components/responses/BadRequest" }
-        "404": { $ref: "#/components/responses/NotFound" }
-        "500": { $ref: "#/components/responses/InternalError" }
-      security:
-        - BearerAuth: []
+      security: []
+  /auth/refresh:
     post:
       tags:
-        - categories
-      summary:  Endpoint adds the category
-      operationId: addCategory
-      requestBody:
-       { $ref: "#/components/requestBodies/Category"}
-      responses:
-        "200": { $ref: "#/components/responses/Success" }
-        "401": { $ref: "#/components/responses/Unauthorized" }
-        "409": { $ref: "#/components/responses/Conflict" }
-        "500": { $ref: "#/components/responses/InternalError" }
-      security:
-        - BearerAuth: []
-  
-  /categories/{id}:
-    put:
-      tags:
-        - categories
-      summary:  Deletes the category
-      operationId: editeCategory
+        - auth
+      summary: Logs in and returns the authentication  cookies
+      operationId: refresh
       parameters:
-        - $ref: "#/components/parameters/id"
-      requestBody:
-       { $ref: "#/components/requestBodies/Category"}
+        - in: cookie
+          name: refresh-cookie
+          description: You should provide the `refresh-cookie`
+          schema:
+            type: string
+          required: true
       responses:
-        "200": { $ref: "#/components/responses/Success" }
-        "401": { $ref: "#/components/responses/Unauthorized" }
-        "409": { $ref: "#/components/responses/Conflict" }
-        "500": { $ref: "#/components/responses/InternalError" }
-      security:
-        - BearerAuth: []
-    delete:
+        "200":
+          description: >
+            Refresh.
+            The endpoint returns two named cookies `access-cookie` 
+            and `refresh-cookie`. The `access-cookie` You need to include 
+            this cookie in subsequent requests. And the `refresh-cookie` 
+            You are required for refresh requests.
+          headers: 
+            Set-Cookie:
+              schema: 
+                type: string
+                example: access-cookie=abcde12345; HttpOnly
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "500": { $ref: "#/components/responses/InternalError" } 
+  /auth/change:
+    post:
       tags:
-        - categories
-      summary:  For the category editing
-      operationId: deleteCategory
-      parameters:
-        - $ref: "#/components/parameters/id"
+        - auth
+      summary:  Password changing for authorized users
+      operationId: changePassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - currentPassword
+                - newPassword
+                - newPasswordConfirmed
+              properties:
+                currentPassword:
+                  type: string
+                  description: Current user password
+                newPassword:
+                  type: string
+                  description: New user password
+                  minLength: 8
+                  maxLength: 14
+                  pattern: "^[[:graph:]]{8,14}$"
+                newPasswordConfirmed:
+                  type: string
+                  description: New user password confirmation
+                  minLength: 8
+                  maxLength: 14
+                  pattern: "^[[:graph:]]{8,14}$"
       responses:
         "200": { $ref: "#/components/responses/Success" }
         "401": { $ref: "#/components/responses/Unauthorized" }
-        "409": { $ref: "#/components/responses/Conflict" }
         "500": { $ref: "#/components/responses/InternalError" }
       security:
-        - BearerAuth: []
-  
+        -  accessCookieAuth: []
+
   /feedback:
     post:
       tags:
         - feedback
-      summary:  Endpoint adds the category
+      summary: To get feedback from users
       operationId: addFeedback
       requestBody:
        { $ref: "#/components/requestBodies/Feedback"}
       responses:
         "200": { $ref: "#/components/responses/Success" }
-        "409": { $ref: "#/components/responses/Conflict" }
+        "404": { $ref: "#/components/responses/Conflict" }
         "500": { $ref: "#/components/responses/InternalError" }
   
   /slider:
@@ -343,7 +287,24 @@ paths:
                   data:
                     type: array
                     items:
-                      $ref: "#/components/schemas/Image"
+                      properties:
+                        id:
+                          type: string
+                          example: "5a5d9f5c-1c7d-4374-86e1-2c9e01db3ce8"
+                        title:
+                          type: string
+                          example: "Image Title"
+                        thumb:
+                          $ref: "#/components/schemas/Image"
+                        alt:
+                          type: string
+                          example: "Some text instead of photo"
+                        created:
+                          type: string
+                          example: "2006-01-02 15:04:05"
+                        modified:
+                          type: string
+                          example: "2023-04-03 18:23:34"     
         "400": { $ref: "#/components/responses/BadRequest" }
         "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/InternalError" }
@@ -361,22 +322,23 @@ paths:
         "409": { $ref: "#/components/responses/Conflict" }
         "500": { $ref: "#/components/responses/InternalError" }
       security:
-        - BearerAuth: []
-    
-    put: 
+        -  accessCookieAuth: []
+  /slider/{id}:
+    delete:
       tags:
         - slider
-      summary:  Endpoint for the slider image changing
-      operationId: editeSliderImage
-      requestBody:
-       { $ref: "#/components/requestBodies/SliderImage"}
+      summary: Deletes a slide
+      operationId: deleteSlider
+      parameters:
+        - $ref: "#/components/parameters/id"
       responses:
-        "200": { $ref: "#/components/responses/Success" }
+        "200": {$ref: "#/components/responses/Success"}
+        "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
-        "409": { $ref: "#/components/responses/Conflict" }
+        "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/InternalError" }
       security:
-        - BearerAuth: []
+        -  accessCookieAuth: []
 
   /partners:
     get:
@@ -384,6 +346,9 @@ paths:
         - "partners"
       summary: Returns an array of the partners logos 
       operationId: getAllPartnersLogos
+      parameters:
+        - $ref: "#/components/parameters/offset"
+        - $ref: "#/components/parameters/limit"
       responses:
         "200":
           description: A successful response.
@@ -416,11 +381,11 @@ paths:
         "409": { $ref: "#/components/responses/Conflict" }
         "500": { $ref: "#/components/responses/InternalError" }
       security:
-        - BearerAuth: []
+        -  accessCookieAuth: []
     
     put: 
       tags:
-        - parners
+        - partners
       summary:  Changes the parthers logo
       operationId: editePartnerInfo
       requestBody:
@@ -431,12 +396,11 @@ paths:
         "409": { $ref: "#/components/responses/Conflict" }
         "500": { $ref: "#/components/responses/InternalError" }
       security:
-        - BearerAuth: []
-
+        -  accessCookieAuth: []
   /partners/{id}:
     delete: 
       tags:
-        - parners
+        - partners
       summary:  Delete the parthers logo
       operationId: deletePartner
       parameters:
@@ -447,10 +411,119 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/InternalError" }
       security:
-        - BearerAuth: []
+        -  accessCookieAuth: []
+  
+  /reports:
+    get: 
+      tags:
+        - reports
+      summary:  Return the report
+      operationId: getReports
+      responses:
+        "200":
+          description: A successful response with document inside.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: 
+                    type: integer
+                    example: 200
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Report"
+        "204": { $ref: "#/components/responses/PartialContent" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+    put: 
+      tags:
+        - reports
+      summary:  It should recieve the report objects and changes the old one to the new one (replace with new) 
+      operationId: editeReports
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - "thumb"
+              properties:
+                report:
+                  type: string
+                  format: binary
+            encoding:
+              report:
+                contentType: application/pdf
+      responses:
+        "201": { $ref: "#/components/responses/Created" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "500": { $ref: "#/components/responses/InternalError" }
+      security:
+        -  accessCookieAuth: []
+
+    delete: 
+      tags:
+        - reports
+      summary: Just delete the report file. 
+      operationId: deleteReports
+      responses:
+        "200": { $ref: "#/components/responses/Created" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalError" }
+      security:
+        -  accessCookieAuth: []
+
+  /contacts:
+    get:
+      tags:
+        - contacts
+      summary: Get contacts
+      operationId: getContacts
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Contact"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound"}
+        "500": { $ref: "#/components/responses/InternalError" }
+    
+    put:
+      tags:
+        - contacts
+      summary: Update contacts
+      operationId: updateContacts
+      requestBody:
+        $ref: "#/components/requestBodies/Contact"
+      responses:
+        "200": {$ref: "#/components/responses/Success"}
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalError" }
+      security:
+        -  accessCookieAuth: []
 
 components:
   schemas:
+    Report:
+      type: object
+      description: Represents a simple pdf file
+      required:
+        - file
+      properties:
+        file:
+          type: string
+          format: binary
+          pattern: "^.*\\.pdf$"
+          description: Maximum file size must not exceed 2MB
+  
     Partner:
       type: object
       description: Represent object of the partner with the partner logo
@@ -471,55 +544,40 @@ components:
 
     Feedback:
       type: object
-      description: Represent feedback object
+      description: Represents feedback object
       required:
+        - name
         - emailAddress
-        - emailBody
+        - comment
       properties:
         name:
           type: string
           example: Vasyl Petrenko
+          minLength: 2
+          maxLength: 50
         emailAddress:
           type: string
+          description: Email must contain the symbol @ and must not contain ru-domains such as mail.ru, yandex.ru, list.ru
           format: email
+          pattern: "^(?!.*\\.ru$)"
           example: vasya@example.com
-        emailBody:
+        comment:
           type: string
-          description: The main inforamation about some problem
+          description: The main information about some problem
           format: text
+          minLength: 1
+          maxLength: 300
     
     Instruction:
       type: object
-      description: Minimal quantity of information =)
+      description: Minimal quantity of information
       required:
         - text
       properties:
-        id:
-          type: string
-          format: uuid
-          uniqueItems: true
         text:
           type: string
-          description: The main inforamation about some problem
+          description: The main information about some problem
           format: text
-    
-    Category:
-      type: object
-      required:
-        - title
-        - icon
-      properties:
-        id:
-          type: string
-          format: uuid
-          uniqueItems: true
-        title:
-          type: string
-          example: Personal data
-          uniqueItems: true
-        icon:
-          type: string
-          example: /assets/service/image/png
     
     User:
       type: object
@@ -546,7 +604,8 @@ components:
           type: string
           format: password
           minLength: 8
-          maxLength: 256
+          maxLength: 14
+          pattern: "^[[:graph:]]{8,14}$"
           example: "12345678AbcdE"
     
     Card:
@@ -561,30 +620,38 @@ components:
           format: uuid
         title:
           type: string
+          minLength: 3
+          maxLength: 300
           example: I was hacked
         thumb:
-          $ref: "#/components/schemas/Image"
-        instructions:
+          type: string
+          example: static/uploads/some.jpg
+        desctiptions:
           type: array
           items:
-              $ref: "#/components/schemas/Instruction"
-        isPublished:
-          type: boolean
-          default: false
+            $ref: "#/components/schemas/Instruction"
     
     Image:
       type: object
       required:
+        - file
         - path
       properties:
+        file:
+          type: string
+          format: binary
+          pattern: "^.*\\.(jpg|webP|png)$"
+          description: Maximum file size must not exceed 5MB
         id:
           type: string
           format: uuid
+          uniqueItems: true
         path:
           type: string
+          format: path
           example: ./assets/cards/image1.png
-        alt:
-          type: string
+          # To avoid the identical file titles
+          uniqueItems: true
     
     TokenPair:
       type: object
@@ -595,8 +662,30 @@ components:
         refresh-token:
           type: string
           format: uuid
-  
+    
+    Contact:
+      type: object
+      required:
+        - phone1
+        - phone2
+        - email
+      properties:
+        phone1:
+          type: string
+        phone2:
+          type: string
+        email:
+          type: string
+       
   requestBodies:
+    Report:
+      required: true
+      content:
+        multipart/form-data:
+          schema:
+            $ref: "#/components/schemas/Report"
+      description: Partner object that needs to be added to the server
+      
     Partner:
       required: true
       content:
@@ -610,7 +699,22 @@ components:
       content:
         multipart/form-data:
           schema:
-            $ref: "#/components/schemas/Image"
+            type: object
+            required:
+              - title
+              - thumb
+              - alt
+            properties:
+              title:
+                type: string
+                minLength: 10
+                maxLength: 30
+                example: "Slider title"
+              thumb:
+                $ref: "#/components/schemas/Image"
+              alt:
+                type: string
+                example: "Some text instead of photo"
       description: Slider image object that needs to be added to the server
     
     Feedback:
@@ -619,7 +723,7 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/Feedback"
-      description: Card object that needs to be added to the server
+      description: Feedback object that needs to be added to the server
     
     Card:
       required: true
@@ -629,14 +733,6 @@ components:
             $ref: "#/components/schemas/Card"
       description: Card object that needs to be added to the server
     
-    Category:
-      required: true
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/Category"
-      description: Category object that needs to be added to the server
-    
     UserArray:
       content:
         application/json:
@@ -644,14 +740,26 @@ components:
             type: array
             items:
               $ref: "#/components/schemas/User"
-      description: List of user object
+      description: List of user objects
       required: true
+    
+    Contact:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Contact"
+      description: Contact object that needs to be added to the server
   
   securitySchemes:
-    BearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
+    accessCookieAuth:         # arbitrary name for the security scheme; will be used in the "security" key later
+      type: apiKey
+      in: cookie
+      name: access-cookie
+    refreshCookieAuth:         # arbitrary name for the security scheme; will be used in the "security" key later
+      type: apiKey
+      in: cookie
+      name: refresh-cookie
   
   parameters:
     id:
@@ -662,14 +770,38 @@ components:
       schema:
           type: string
           format: uuid
-  
+          
+    offset:
+      name: offset
+      in: query
+      description:  Is a parameter used in pagination to specify the starting point from where the data should be fetched.
+      required: true
+      schema:
+        type: integer
+        minimum: 0
+        example: 0
+        
+    limit:
+      name: limit
+      in: query
+      description:  Specifies the number of the objects to be displayed
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 50
+        example: 5
+         
   responses:
     Success:
-      description: A successful response.
+      description: A successful response
       content:
         application/json:
           schema:
             type: object
+            required:
+              - status
+              - message
             properties:
               status: 
                 type: integer
@@ -677,8 +809,24 @@ components:
               message:
                 type: string
                 example: successfull
+    Created:
+      description: Resource was created
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - status
+              - message
+            properties:
+              status: 
+                type: integer
+                example: 201
+              message:
+                type: string
+                example: created
     BadRequest:
-      description: It indicates that the server cannot or will not process the request due to an apparent client error
+      description: It indicates that the server can not or will not process the request due to an apparent client error
       content:
         application/json:
           schema:
@@ -741,6 +889,24 @@ components:
                 message:
                   type: string
                   example: not found error
+    PartialContent:
+        description: When nothing to return
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - code
+                - data
+              properties:
+                status:
+                  type: integer
+                  example: 206
+                data:
+                  type: array
+                  items:
+                    type: string
+
     NotAllowedMethot:
         description: A 405 error status code means "Method Not Allowed"
         content:
