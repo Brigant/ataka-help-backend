@@ -1,0 +1,33 @@
+version: '3.9'
+
+services:
+    db:
+      image: postgres:15.3-alpine3.18
+      container_name: dbdocker
+      environment:
+        POSTGRES_USER: ${DB_USER}
+        POSTGRES_PASSWORD: ${DB_PASSWORD}
+        POSTGRES_DB: ${DB_NAME}
+        PGDATA: /data/postgres
+        TZ: "Europe/Kiev"
+        PGTZ: "Europe/Kiev"
+      volumes:
+        - database:/data/postgres
+      ports:
+        - ${DB_PORT}:${DB_PORT}
+      networks:
+        - postgress-net
+      restart: unless-stopped
+      healthcheck:
+        test: pg_isready -U ${DB_USER} -d ${DB_NAME}
+        interval: 2s
+        timeout: 2s
+        retries: 5
+
+volumes:
+  database:
+
+networks:
+  postgress-net:
+    driver: bridge
+    name: postgress-net

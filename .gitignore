@@ -36,5 +36,3 @@ coverage.*
 static/uploads/*.* 
 !.gitkeep
 
-# Directories
-vendor

@@ -2,34 +2,7 @@
 version: '3.9'
 
 services:
-    db:
-      env_file:
-        - .env
-      image: postgres:15.3-alpine3.18
-      container_name: dbdocker
-      environment:
-        POSTGRES_USER: ${DB_USER}
-        POSTGRES_PASSWORD: ${DB_PASSWORD}
-        POSTGRES_DB: ${DB_NAME}
-        PGDATA: /data/postgres
-        TZ: "Europe/Kiev"
-        PGTZ: "Europe/Kiev"
-      volumes:
-        - database:/data/postgres
-      ports:
-        - ${DB_PORT}:${DB_PORT}
-      networks:
-        - atackhelp-net
-      restart: unless-stopped
-      healthcheck:
-        test: pg_isready -U ${DB_USER} -d ${DB_NAME}
-        interval: 2s
-        timeout: 2s
-        retries: 5
-
     app:
-      env_file:
-        - .env
       build: .
       container_name: app
       restart: unless-stopped
@@ -37,20 +10,13 @@ services:
         - ${APP_PORT}:${APP_PORT}
       volumes:
         - ./static:/opt/static
-      depends_on:
-        db:
-          condition: service_healthy
       networks:
-        - atackhelp-net
+        - postgress-net
+        - localnet
     
     migrate-up:
-      env_file:
-        - .env
       image: migrate/migrate
       container_name: migrate-up
-      depends_on:
-        db:
-          condition: service_healthy
       volumes:
         - ${MIGRATIONS_HOST_PATH:-./migrations}:/migrations
       command:
@@ -62,11 +28,13 @@ services:
           "up"
         ]
       networks:
-        - atackhelp-net
-
-volumes:
-  database:
+        - postgress-net
 
 networks:
-  atackhelp-net:
+  postgress-net:
+    external: true
+    name: postgress-net
 
+  localnet:
+    external: true
+    name: localnet

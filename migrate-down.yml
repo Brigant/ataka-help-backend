@@ -2,8 +2,6 @@ version: '3.9'
 
 services:
   migrate-down:
-      env_file:
-        - .env
       image: migrate/migrate
       container_name: migrate-down
       volumes:
@@ -17,9 +15,9 @@ services:
           "down", "-all"
         ]
       networks:
-        - ataka-help-backend_atackhelp-net
+        - postgress-net
         
 networks:
-  ataka-help-backend_atackhelp-net:
+  postgress-net:
     external: true
-    name: ataka-help-backend_atackhelp-net
+    name: postgress-net
