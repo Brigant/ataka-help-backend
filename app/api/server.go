@@ -65,7 +65,7 @@ func (s *Server) Shutdown(ctx context.Context) error {
 
 func (s Server) initRoutes(app *fiber.App, h Handler, cfg config.Config) {
 	identifyUser := midlware.NewUserIdentity(cfg.Auth)
-	api := app.Group("/api")
+	api := app.Group("/api/v1")
 
 	api.Static("/static", "./static")
 
