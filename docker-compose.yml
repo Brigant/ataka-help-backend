@@ -28,7 +28,7 @@ services:
           "up"
         ]
       networks:
-        - postgress-net
+        - postgres-net
 
 networks:
   postgres-net:
