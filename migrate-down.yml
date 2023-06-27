@@ -15,9 +15,9 @@ services:
           "down", "-all"
         ]
       networks:
-        - postgress-net
+        - postgres-net
         
 networks:
-  postgress-net:
+  postgres-net:
     external: true
-    name: postgress-net
+    name: postgres-net

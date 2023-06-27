@@ -16,18 +16,13 @@ services:
       ports:
         - ${DB_PORT}:${DB_PORT}
       networks:
-        - postgress-net
+        - postgres-net
       restart: unless-stopped
-      healthcheck:
-        test: pg_isready -U ${DB_USER} -d ${DB_NAME}
-        interval: 2s
-        timeout: 2s
-        retries: 5
 
 volumes:
   database:
 
 networks:
-  postgress-net:
+  postgres-net:
     driver: bridge
-    name: postgress-net
+    name: postgres-net

@@ -11,7 +11,7 @@ services:
       volumes:
         - ./static:/opt/static
       networks:
-        - postgress-net
+        - postgres-net
         - localnet
     
     migrate-up:
@@ -31,9 +31,9 @@ services:
         - postgress-net
 
 networks:
-  postgress-net:
+  postgres-net:
     external: true
-    name: postgress-net
+    name: postgres-net
 
   localnet:
     external: true
