@@ -65,36 +65,38 @@ func (s *Server) Shutdown(ctx context.Context) error {
 
 func (s Server) initRoutes(app *fiber.App, h Handler, cfg config.Config) {
 	identifyUser := midlware.NewUserIdentity(cfg.Auth)
+
+	app.Static("/static", "./static")
+
 	api := app.Group("/api/v1")
+	{
+		api.Get("/cards", timeout.NewWithContext(h.Card.getCards, cfg.Server.AppReadTimeout))
+		api.Post("/cards", identifyUser, timeout.NewWithContext(h.Card.createCard, cfg.Server.AppWriteTimeout))
+		api.Get("/cards/:id", timeout.NewWithContext(h.Card.findCard, cfg.Server.AppReadTimeout))
+		api.Delete("/cards/:id", identifyUser, timeout.NewWithContext(h.Card.deleteCard, cfg.Server.AppWriteTimeout))
 
-	api.Static("/static", "./static")
+		api.Get("/partners", h.Partner.getPartners)
+		api.Post("/partners", identifyUser, h.Partner.createPartner)
+		api.Delete("/partners/:id", identifyUser, h.Partner.deletePartner)
 
-	api.Get("/cards", timeout.NewWithContext(h.Card.getCards, cfg.Server.AppReadTimeout))
-	api.Post("/cards", identifyUser, timeout.NewWithContext(h.Card.createCard, cfg.Server.AppWriteTimeout))
-	api.Get("/cards/:id", timeout.NewWithContext(h.Card.findCard, cfg.Server.AppReadTimeout))
-	api.Delete("/cards/:id", identifyUser, timeout.NewWithContext(h.Card.deleteCard, cfg.Server.AppWriteTimeout))
+		api.Get("/slider", h.Slider.getSlider)
+		api.Post("/slider", identifyUser, h.Slider.createSlide)
+		api.Delete("/slider/:id", identifyUser, h.Slider.deleteSlide)
 
-	api.Get("/partners", h.Partner.getPartners)
-	api.Post("/partners",identifyUser, h.Partner.createPartner)
-	api.Delete("/partners/:id",identifyUser, h.Partner.deletePartner)
+		api.Put("/contacts", identifyUser, timeout.NewWithContext(h.Contact.edit, cfg.Server.AppReadTimeout))
+		api.Get("/contacts", timeout.NewWithContext(h.Contact.get, cfg.Server.AppReadTimeout))
 
-	api.Get("/slider", h.Slider.getSlider)
-	api.Post("/slider", identifyUser, h.Slider.createSlide)
-	api.Delete("/slider/:id", identifyUser, h.Slider.deleteSlide)
+		api.Get("/reports", h.Report.getReports)
+		api.Put("/reports", identifyUser, h.Report.updateReport)
+		api.Delete("/reports", identifyUser, h.Report.deleteReport)
 
-	api.Put("/contacts", identifyUser, timeout.NewWithContext(h.Contact.edit, cfg.Server.AppReadTimeout))
-	api.Get("/contacts", timeout.NewWithContext(h.Contact.get, cfg.Server.AppReadTimeout))
+		api.Post("/feedback", timeout.NewWithContext(h.Feedback.sendFedback, cfg.Server.AppWriteTimeout))
 
-	api.Get("/reports", h.Report.getReports)
-	api.Put("/reports", identifyUser, h.Report.updateReport)
-	api.Delete("/reports", identifyUser, h.Report.deleteReport)
-
-	api.Post("/feedback", timeout.NewWithContext(h.Feedback.sendFedback, cfg.Server.AppWriteTimeout))
-
-	api.Post("/auth/login", timeout.NewWithContext(h.Auth.login, cfg.Server.AppWriteTimeout))
-	api.Post("/auth/logout", identifyUser, timeout.NewWithContext(h.Auth.logout, cfg.Server.AppWriteTimeout))
-	api.Post("/auth/refresh", h.Auth.refresh)
-	api.Post("/auth/change", identifyUser, timeout.NewWithContext(h.Auth.change, cfg.Server.AppReadTimeout))
+		api.Post("/auth/login", timeout.NewWithContext(h.Auth.login, cfg.Server.AppWriteTimeout))
+		api.Post("/auth/logout", identifyUser, timeout.NewWithContext(h.Auth.logout, cfg.Server.AppWriteTimeout))
+		api.Post("/auth/refresh", h.Auth.refresh)
+		api.Post("/auth/change", identifyUser, timeout.NewWithContext(h.Auth.change, cfg.Server.AppReadTimeout))
+	}
 }
 
 func corsConfig() cors.Config {
