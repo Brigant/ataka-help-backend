@@ -54,7 +54,7 @@ func uniqueFilePath(fileName, path string) string {
 
 	fileExt := nameParts[len(nameParts)-1]
 
-	uniqueFileName := uuid.New().String() + "." + fileExt
+	uniqueFileName := uuid.New().String() + "." + fileExt + "/"
 
 	result := path + uniqueFileName
 
