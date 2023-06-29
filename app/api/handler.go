@@ -8,9 +8,9 @@ import (
 )
 
 const (
-	fileLimit     = 2 * 1024 * 1024
-	defaultLimit  = 0
-	defaultOffset = 0
+	fileLimit    = 2 * 1024 * 1024
+	defaultLimit = 0
+	defaultPage  = 1
 )
 
 type ServiceInterfaces interface {

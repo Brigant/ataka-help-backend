@@ -23,17 +23,49 @@ type CardsService struct {
 }
 
 func (s CardsService) ReturnCards(ctx context.Context, params structs.CardQueryParameters) ([]structs.Card, int, error) {
-	cards, err := s.Repo.SelectAllCards(ctx, params)
-	if err != nil {
-		return nil, 0, fmt.Errorf("error happens while SelectAllCards: %w", err)
-	}
-
 	total, err := s.Repo.CountRowsTable(ctx, "cards")
 	if err != nil {
 		return nil, 0, fmt.Errorf("error happens while CountRowsTable: %w", err)
 	}
 
-	return cards, total, nil
+	params.Page, err = pagination(total, params.Limit, params.Page)
+	if err != nil {
+		return []structs.Card{}, 0, err
+	}
+
+	partners, err := s.Repo.SelectAllCards(ctx, params)
+	if err != nil {
+		return nil, 0, fmt.Errorf("error happens while SelectAllCards: %w", err)
+	}
+
+	return partners, total, nil
+
+	// if params.Limit > 0 {
+	// 	if total/params.Limit < params.Page {
+	// 		return []structs.Card{}, 0, fiber.NewError(fiber.StatusNotFound, fiber.ErrNotFound.Message)
+	// 	}
+
+	// 	customParams := structs.CardCustomizedParameters{
+	// 		Offset: (params.Page - 1) * params.Limit,
+	// 		Limit:  params.Limit,
+	// 	}
+
+	// 	cards, err := s.Repo.SelectAllCards(ctx, customParams)
+	// 	if err != nil {
+	// 		return nil, 0, fmt.Errorf("error happens while SelectAllCards: %w", err)
+	// 	}
+
+	// 	return cards, total, nil
+	// } else {
+	// 	customParams := structs.CardCustomizedParameters{}
+
+	// 	cards, err := s.Repo.SelectAllCards(ctx, customParams)
+	// 	if err != nil {
+	// 		return nil, 0, fmt.Errorf("error happens while SelectAllCards: %w", err)
+	// 	}
+
+	// 	return cards, total, nil
+	// }
 }
 
 func (s CardsService) SaveCard(ctx context.Context, form *multipart.Form) error {

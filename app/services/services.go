@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/baza-trainee/ataka-help-backend/app/config"
+	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 )
 
@@ -59,4 +60,34 @@ func uniqueFilePath(fileName, path string) string {
 	result := path + uniqueFileName
 
 	return result
+}
+
+func pagination(total, limit, page int) (int, error) {
+	if limit == 0 {
+		return 0, nil
+	}
+
+	if total%limit == 0 {
+		if limit*page <= total {
+			offset := (page - 1)
+
+			return offset, nil
+		} else {
+			return 0, fiber.ErrNotFound
+			// return 0, structs.ErrNotFound
+		}
+	} else {
+		maxPage := total / limit
+
+		maxPage += 1
+
+		if page > maxPage {
+			return 0, fiber.ErrNotFound
+			// return 0, structs.ErrNotFound
+		}
+
+		offset := (page - 1) * limit
+
+		return offset, nil
+	}
 }

@@ -76,7 +76,7 @@ func (s Slider) getSlider(ctx *fiber.Ctx) error {
 	case err := <-chErr:
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	case <-ctxWithDeadline.Done():
-		return ctx.Status(fiber.StatusRequestTimeout).JSON(structs.SetResponse(fiber.StatusRequestTimeout, fiber.ErrRequestTimeout.Message))
+		return fiber.NewError(fiber.StatusRequestTimeout, fiber.ErrRequestTimeout.Message)
 	}
 }
 
@@ -158,7 +158,7 @@ func (s Slider) createSlide(ctx *fiber.Ctx) error {
 	case err := <-chErr:
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	case <-ctxWithDeadline.Done():
-		return ctx.Status(fiber.StatusRequestTimeout).JSON(structs.SetResponse(fiber.StatusRequestTimeout, fiber.ErrRequestTimeout.Message))
+		return fiber.NewError(fiber.StatusRequestTimeout, fiber.ErrRequestTimeout.Message)
 	}
 }
 
@@ -206,6 +206,6 @@ func (s Slider) deleteSlide(ctx *fiber.Ctx) error {
 
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	case <-ctxWithDeadline.Done():
-		return ctx.Status(fiber.StatusRequestTimeout).JSON(structs.SetResponse(fiber.StatusRequestTimeout, fiber.ErrRequestTimeout.Message))
+		return fiber.NewError(fiber.StatusRequestTimeout, fiber.ErrRequestTimeout.Message)
 	}
 }

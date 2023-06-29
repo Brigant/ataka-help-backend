@@ -12,23 +12,27 @@ import (
 
 func (r Repo) SelectAllCards(ctx context.Context, params structs.CardQueryParameters) ([]structs.Card, error) {
 	cards := []structs.Card{}
-	var limit *int = &params.Limit
+
+	var limit, page *int = &params.Limit, &params.Page
+
+	if params.Limit == 0 {
+		limit = nil
+		page = nil
+	}
 
 	query := `
 		SELECT id, title, thumb, alt, description, created, modified
 		FROM public.cards 
 		ORDER BY created DESC
-		Limit $1 OFFSET $2;
+		LIMIT $1 
+		OFFSET $2;
 	`
-	if params.Limit == 0 {
-		limit = nil
-	}
 
 	select {
 	case <-ctx.Done():
 		return nil, structs.ErrTimeout
 	default:
-		if err := r.db.SelectContext(ctx, &cards, query, limit, params.Offset); err != nil {
+		if err := r.db.SelectContext(ctx, &cards, query, limit, page); err != nil {
 			pqErr := new(pq.Error)
 			if errors.As(err, &pqErr) && pqErr.Code.Name() == "query_canceled" {
 				return nil, structs.ErrTimeout

@@ -40,8 +40,8 @@ func (p Partner) getPartners(ctx *fiber.Ctx) error {
 	chWell := make(chan structs.PartnerResponse)
 
 	params := structs.PartnerQueryParameters{
-		Limit:  defaultLimit,
-		Offset: defaultOffset,
+		Limit: defaultLimit,
+		Page:  defaultPage,
 	}
 
 	if err := ctx.QueryParser(&params); err != nil {
@@ -56,8 +56,7 @@ func (p Partner) getPartners(ctx *fiber.Ctx) error {
 
 	go func(chErr chan error, chWell chan structs.PartnerResponse) {
 		partners, total, err := p.Service.ReturnPartners(ctxWithDeadline, params)
-		if err != nil && !errors.Is(err, structs.ErrNotFound) {
-			p.log.Errorw("getPartner", "getPartner error", err.Error())
+		if err != nil {
 
 			chErr <- err
 
@@ -80,9 +79,14 @@ func (p Partner) getPartners(ctx *fiber.Ctx) error {
 	case response := <-chWell:
 		return ctx.Status(fiber.StatusOK).JSON(response)
 	case err := <-chErr:
+		if errors.Is(err, fiber.ErrNotFound) {
+			return fiber.NewError(fiber.StatusNotFound, err.Error())
+		}
+
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	case <-ctxWithDeadline.Done():
-		return ctx.Status(fiber.StatusRequestTimeout).JSON(structs.SetResponse(fiber.StatusRequestTimeout, fiber.ErrRequestTimeout.Message))
+		return fiber.NewError(fiber.StatusRequestTimeout, fiber.ErrRequestTimeout.Message)
+		// return ctx.Status(fiber.StatusRequestTimeout).JSON(structs.SetResponse(fiber.StatusRequestTimeout, fiber.ErrRequestTimeout.Message))
 	}
 }
 
@@ -154,7 +158,7 @@ func (p Partner) createPartner(ctx *fiber.Ctx) error {
 	case err := <-chErr:
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	case <-ctxWithDeadline.Done():
-		return ctx.Status(fiber.StatusRequestTimeout).JSON(structs.SetResponse(fiber.StatusRequestTimeout, fiber.ErrRequestTimeout.Message))
+		return fiber.NewError(fiber.StatusRequestTimeout, fiber.ErrRequestTimeout.Message)
 	}
 }
 
@@ -202,6 +206,6 @@ func (p Partner) deletePartner(ctx *fiber.Ctx) error {
 
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	case <-ctxWithDeadline.Done():
-		return ctx.Status(fiber.StatusRequestTimeout).JSON(structs.SetResponse(fiber.StatusRequestTimeout, fiber.ErrRequestTimeout.Message))
+		return fiber.NewError(fiber.StatusRequestTimeout, fiber.ErrRequestTimeout.Message)
 	}
 }

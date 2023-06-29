@@ -22,14 +22,19 @@ type PartnersService struct {
 }
 
 func (s PartnersService) ReturnPartners(ctx context.Context, params structs.PartnerQueryParameters) ([]structs.Partner, int, error) {
-	partners, err := s.Repo.SelectAllPartners(ctx, params)
-	if err != nil {
-		return nil, 0, fmt.Errorf("error happens while SelectAllPartners: %w", err)
-	}
-
 	total, err := s.Repo.CountRowsTable(ctx, "partners")
 	if err != nil {
 		return nil, 0, fmt.Errorf("error happens while CountRowsTable: %w", err)
+	}
+
+	params.Page, err = pagination(total, params.Limit, params.Page)
+	if err != nil {
+		return []structs.Partner{}, 0, err
+	}
+
+	partners, err := s.Repo.SelectAllPartners(ctx, params)
+	if err != nil {
+		return nil, 0, fmt.Errorf("error happens while SelectAllPartners: %w", err)
 	}
 
 	return partners, total, nil

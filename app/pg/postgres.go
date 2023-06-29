@@ -2,7 +2,6 @@ package pg
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 
@@ -93,50 +92,40 @@ func (r Repo) CountRowsTable(ctx context.Context, table string) (int, error) {
 }
 
 func (r Repo) SelectAllPartners(ctx context.Context, params structs.PartnerQueryParameters) ([]structs.Partner, error) {
-	var resultRows *sql.Rows
-
 	partners := []structs.Partner{}
 
-	if params.Limit > 0 && params.Offset >= 0 {
-		query := `SELECT id, alt, thumb, created, modified
-				  FROM public.partners as p
-				  ORDER BY p.created DESC
-				  Limit $1
-				  OFFSET $2;`
+	var limit, page *int = &params.Limit, &params.Page
 
-		rows, err := r.db.QueryContext(ctx, query, params.Limit, params.Offset)
-		if err != nil {
-			return nil, fmt.Errorf("an error occurs while QueryContext: %w", err)
-		}
-
-		resultRows = rows
-	} else {
-		query := `SELECT id, alt, thumb, created, modified
-				  FROM public.partners as p
-				  ORDER BY p.created DESC;`
-
-		rows, err := r.db.QueryContext(ctx, query)
-		if err != nil {
-			return nil, fmt.Errorf("an error occurs while QueryContext: %w", err)
-		}
-
-		resultRows = rows
+	if params.Limit == 0 {
+		limit = nil
+		page = nil
 	}
 
-	defer resultRows.Close()
+	query := `SELECT id, alt, thumb, created, modified
+				FROM public.partners as p
+				ORDER BY p.created DESC
+				LIMIT $1
+				OFFSET $2;`
 
-	for resultRows.Next() {
+	rows, err := r.db.QueryContext(ctx, query, limit, page)
+	if err != nil {
+		return nil, fmt.Errorf("an error occurs while QueryContext: %w", err)
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
 		partner := structs.Partner{}
 
-		if err := resultRows.Scan(&partner.ID, &partner.Alt, &partner.Thumb, &partner.Created, &partner.Modified); err != nil {
-			return nil, fmt.Errorf("an error occurs while resultRows.Scan(): %w", err)
+		if err := rows.Scan(&partner.ID, &partner.Alt, &partner.Thumb, &partner.Created, &partner.Modified); err != nil {
+			return nil, fmt.Errorf("an error occurs while rows.Scan(): %w", err)
 		}
 
 		partners = append(partners, partner)
 	}
 
-	if err := resultRows.Err(); err != nil {
-		return nil, fmt.Errorf("an error occurs while resultRows.Err(): %w", err)
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("an error occurs while rows.Err(): %w", err)
 	}
 
 	return partners, nil

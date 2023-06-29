@@ -24,6 +24,6 @@ type CardsResponse struct {
 }
 
 type CardQueryParameters struct {
-	Offset int `json:"offset" query:"offset"`
-	Limit  int `json:"limit" query:"limit"`
+	Page  int `json:"page" query:"page"`
+	Limit int `json:"limit" query:"limit"`
 }

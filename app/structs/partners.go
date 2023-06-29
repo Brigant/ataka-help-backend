@@ -21,6 +21,6 @@ type PartnerResponse struct {
 }
 
 type PartnerQueryParameters struct {
-	Offset int `json:"offset" query:"offset"`
-	Limit  int `json:"limit" query:"limit"`
+	Limit int `json:"limit" query:"limit"`
+	Page  int `json:"page" query:"page"`
 }

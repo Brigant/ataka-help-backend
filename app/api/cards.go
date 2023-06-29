@@ -31,7 +31,10 @@ func NewCardsHandler(service CardService, log *logger.Logger) CardHandler {
 }
 
 func (h CardHandler) getCards(ctx *fiber.Ctx) error {
-	params := structs.CardQueryParameters{}
+	params := structs.CardQueryParameters{
+		Limit: defaultLimit,
+		Page:  defaultPage,
+	}
 
 	if err := ctx.QueryParser(&params); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
