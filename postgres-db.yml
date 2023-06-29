@@ -1,0 +1,28 @@
+version: '3.9'
+
+services:
+    db:
+      image: postgres:15.3-alpine3.18
+      container_name: db
+      environment:
+        POSTGRES_USER: ${DB_USER}
+        POSTGRES_PASSWORD: ${DB_PASSWORD}
+        POSTGRES_DB: ${DB_NAME}
+        PGDATA: /data/postgres
+        TZ: "Europe/Kiev"
+        PGTZ: "Europe/Kiev"
+      volumes:
+        - database:/data/postgres
+      ports:
+        - ${DB_PORT}:${DB_PORT}
+      networks:
+        - postgres-net
+      restart: unless-stopped
+
+volumes:
+  database:
+
+networks:
+  postgres-net:
+    driver: bridge
+    name: postgres-net

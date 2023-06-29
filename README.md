@@ -25,8 +25,10 @@ make migrate-down
 ### How to run at first time or rebuild application
 Run command:
 ```
+make dbrun
 make build
 ```
+After add defaul user to database. Use sql cript in the **seed** directory for help
 ### Simple run
 It runs existed images:
 ```

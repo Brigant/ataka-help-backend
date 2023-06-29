@@ -7,22 +7,25 @@ devrun:
 	export `grep -v '#' .env | xargs` && DB_HOST=localhost && go run cmd/main.go
 
 dbrun:
-	docker-compose up -d db
+	docker compose -f postgres-db.yml -p postgres up -d
+
+dbdown:
+	docker compose -f postgres-db.yml -p postgres down
 
 migration-up:
-	docker-compose up -d db migrate-up
+	docker compose up -d migrate-up
 
 migration-down:
-	docker-compose -f migrate-down.yml up -d
+	docker compose -f migrate-down.yml up -d
 
 build:
-	docker-compose up -d --build
+	docker compose up -d --build
 
 up:
-	docker-compose up -d
+	docker compose up -d
 
 down:
-	docker-compose down
+	docker compose down
 
 lintcheck:
 	golangci-lint run
