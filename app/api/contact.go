@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"errors"
 
 	"github.com/baza-trainee/ataka-help-backend/app/logger"
 	"github.com/baza-trainee/ataka-help-backend/app/structs"
@@ -46,6 +47,10 @@ func (h ContactHandler) edit(ctx *fiber.Ctx) error {
 func (h ContactHandler) get(ctx *fiber.Ctx) error {
 	contact, err := h.Service.Obtain(ctx.Context())
 	if err != nil {
+		if errors.Is(err, structs.ErrNotFound) {
+			return fiber.NewError(fiber.StatusNoContent, err.Error())
+		}
+
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
