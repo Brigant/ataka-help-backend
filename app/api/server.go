@@ -66,9 +66,10 @@ func (s *Server) Shutdown(ctx context.Context) error {
 func (s Server) initRoutes(app *fiber.App, h Handler, cfg config.Config) {
 	identifyUser := midlware.NewUserIdentity(cfg.Auth)
 
+	app.Static("/static", "./static")
+
 	api := app.Group("/api/v1")
 	{
-		api.Static("/static", "./static")
 		api.Get("/cards", timeout.NewWithContext(h.Card.getCards, cfg.Server.AppReadTimeout))
 		api.Post("/cards", identifyUser, timeout.NewWithContext(h.Card.createCard, cfg.Server.AppWriteTimeout))
 		api.Get("/cards/:id", timeout.NewWithContext(h.Card.findCard, cfg.Server.AppReadTimeout))
