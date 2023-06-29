@@ -1,11 +1,11 @@
 version: '3.9'
 
 services:
-    app:
+    ataka-back:
       env_file:
         - .env
       build: .
-      container_name: app
+      container_name: ataka-back
       restart: unless-stopped
       ports:
         - ${APP_PORT}:${APP_PORT}
