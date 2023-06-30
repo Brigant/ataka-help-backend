@@ -10,7 +10,7 @@ const (
 	nameMask    = `^[\p{L}\s'’]{2,50}$`
 	mailMask    = `^[\w-\.]+@[\w-]+\.+[\w-]{2,20}$`
 	badMask     = `@[a-zA-Z0-9.-]*\.ru$`
-	commentMask = `^[\p{L}\s'’\(\)?!.,\-]{1,300}$`
+	commentMask = `^[\p{L}\s'’\(\)?!.,\-;]{1,300}$`
 )
 
 var (
