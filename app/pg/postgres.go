@@ -109,7 +109,7 @@ func (r Repo) SelectAllPartners(ctx context.Context, params structs.PartnerQuery
 
 	query := `SELECT id, alt, thumb, created, modified
 				FROM public.partners as p
-				ORDER BY p.created DESC
+				ORDER BY p.created ASC
 				LIMIT $1
 				OFFSET $2;`
 

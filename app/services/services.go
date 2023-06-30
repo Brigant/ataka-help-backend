@@ -69,12 +69,11 @@ func pagination(total, limit, page int) (int, error) {
 
 	if total%limit == 0 {
 		if limit*page <= total {
-			offset := (page - 1)
+			offset := (page - 1) * limit
 
 			return offset, nil
 		} else {
 			return 0, fiber.ErrNotFound
-			// return 0, structs.ErrNotFound
 		}
 	} else {
 		maxPage := total / limit
@@ -83,7 +82,6 @@ func pagination(total, limit, page int) (int, error) {
 
 		if page > maxPage {
 			return 0, fiber.ErrNotFound
-			// return 0, structs.ErrNotFound
 		}
 
 		offset := (page - 1) * limit
