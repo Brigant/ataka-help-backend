@@ -71,7 +71,8 @@ func (h AuthHandler) login(ctx *fiber.Ctx) error {
 		tokenPair.RefresgExpire,
 	)
 
-	refreshCookie.Path = apiVersion1+"/auth/refresh"
+	// refreshCookie.Path = apiVersion1 + "/auth/refresh"
+	refreshCookie.Path = "/auth/refresh"
 
 	ctx.Cookie(refreshCookie)
 
@@ -82,7 +83,7 @@ func (h AuthHandler) refresh(ctx *fiber.Ctx) error {
 	refreshString := ctx.Cookies(structs.RefreshCookieName)
 
 	if refreshString == "" {
-		return fiber.NewError(fiber.StatusUnauthorized, "empty cookie")
+		return fiber.NewError(fiber.StatusForbidden, "empty cookie")
 	}
 
 	userID, err := midlware.ParseToken(refreshString, h.AuthConfig.SigningKey)
@@ -111,8 +112,8 @@ func (h AuthHandler) refresh(ctx *fiber.Ctx) error {
 		tokenPair.RefresgExpire,
 	)
 
-	refreshCookie.Path = apiVersion1+"/auth/refresh"
-
+	// refreshCookie.Path = apiVersion1 + "/auth/refresh"
+	refreshCookie.Path = "/auth/refresh"
 	ctx.Cookie(accessCookie)
 	ctx.Cookie(refreshCookie)
 
@@ -135,9 +136,13 @@ func (h AuthHandler) logout(ctx *fiber.Ctx) error {
 		"",
 		time.Now().Add(-1),
 	)
-	refreshCookie.Path = apiVersion1+"/auth/refresh"
+
+	// refreshCookie.Path = apiVersion1 + "/auth/refresh"
+	refreshCookie.Path = "/auth/refresh"
+
 	ctx.Cookie(accessCookie)
 	ctx.Cookie(refreshCookie)
+
 	return ctx.Status(fiber.StatusOK).JSON(structs.SetResponse(fiber.StatusOK, "success"))
 }
 
