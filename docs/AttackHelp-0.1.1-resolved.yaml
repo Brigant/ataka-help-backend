@@ -323,6 +323,7 @@ paths:
         "500": { $ref: "#/components/responses/InternalError" }
       security:
         -  accessCookieAuth: []
+  
   /slider/{id}:
     delete:
       tags:
@@ -450,7 +451,7 @@ paths:
               required:
                 - "thumb"
               properties:
-                report:
+                thumb:
                   type: string
                   format: binary
             encoding:

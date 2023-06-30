@@ -8,9 +8,16 @@ import (
 )
 
 const (
+<<<<<<< HEAD
 	fileLimit    = 2 * 1024 * 1024
 	defaultLimit = 0
 	defaultPage  = 1
+=======
+	fileLimit     = 2 * 1024 * 1024
+	defaultLimit  = 0
+	defaultOffset = 0
+	apiVersion1 = "/api/v1"
+>>>>>>> main
 )
 
 type ServiceInterfaces interface {

@@ -43,9 +43,10 @@ func (r Repo) UpdateContact(ctx context.Context, contact structs.Contact) error 
 	const expectedEffectedRow = 1
 
 	query := `UPDATE public.contact
-		SET phone1=:phone1, phone2=:phone2, email=:email;
+		SET phone1=$1, phone2=$2, email=$3;
 		`
-	result, err := r.db.NamedExecContext(ctx, query, contact)
+	fmt.Println(contact)
+	result, err := r.db.ExecContext(ctx, query, contact.Phone1, contact.Phone2, contact.Email)
 	if err != nil { //nolint: wsl
 		pqError := new(pq.Error)
 		if errors.As(err, &pqError) && pqError.Code.Name() == ErrCodeUniqueViolation {
@@ -73,7 +74,11 @@ func (r Repo) SelectContact(ctx context.Context) (structs.Contact, error) {
 	contact := structs.Contact{}
 
 	if err := r.db.GetContext(ctx, &contact, query); err != nil {
-		return contact, fmt.Errorf("error while GetContext(): %w", err)
+		if err == sql.ErrNoRows {
+			return structs.Contact{}, structs.ErrNotFound
+		}
+
+		return structs.Contact{}, fmt.Errorf("error while GetContext(): %w", err)
 	}
 
 	return contact, nil
