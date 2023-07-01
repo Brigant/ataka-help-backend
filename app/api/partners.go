@@ -48,6 +48,14 @@ func (p Partner) getPartners(ctx *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 
+	if params.Limit < 0 || params.Page < 0 {
+		return fiber.NewError(fiber.StatusBadRequest, "query params values cant't be negative")
+	}
+
+	if params.Limit > 0 && params.Page == 0 {
+		return fiber.NewError(fiber.StatusBadRequest, "page values should be grater then 0")
+	}
+
 	ctxUser := ctx.UserContext()
 
 	ctxWithDeadline, cancel := context.WithDeadline(ctxUser, time.Now().Add(p.cfg.AppWriteTimeout))

@@ -40,9 +40,17 @@ func (h CardHandler) getCards(ctx *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 
+	if params.Limit < 0 || params.Page < 0 {
+		return fiber.NewError(fiber.StatusBadRequest, "query params values cant't be negative")
+	}
+
+	if params.Limit > 0 && params.Page == 0 {
+		return fiber.NewError(fiber.StatusBadRequest, "page values should be grater then 0")
+	}
+
 	cards, total, err := h.Service.ReturnCards(ctx.UserContext(), params)
 	if err != nil && !errors.Is(err, structs.ErrNotFound) {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		return fiber.NewError(fiber.StatusNoContent, err.Error())
 	}
 
 	response := structs.CardsResponse{
