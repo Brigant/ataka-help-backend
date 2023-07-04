@@ -68,7 +68,7 @@ func (s Server) initRoutes(app *fiber.App, h Handler, cfg config.Config) {
 
 	app.Static("/static", "./static")
 
-	api := app.Group(apiVersion1)
+	api := app.Group(apiPrefixV1)
 	{
 		api.Get("/cards", timeout.NewWithContext(h.Card.getCards, cfg.Server.AppReadTimeout))
 		api.Post("/cards", identifyUser, timeout.NewWithContext(h.Card.createCard, cfg.Server.AppWriteTimeout))

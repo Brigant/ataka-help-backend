@@ -71,7 +71,7 @@ func (h AuthHandler) login(ctx *fiber.Ctx) error {
 		tokenPair.RefresgExpire,
 	)
 
-	refreshCookie.Path = apiVersion1 + "/auth/refresh"
+	refreshCookie.Path = apiPrefixV1 + "/auth/refresh"
 
 	ctx.Cookie(refreshCookie)
 
@@ -111,7 +111,7 @@ func (h AuthHandler) refresh(ctx *fiber.Ctx) error {
 		tokenPair.RefresgExpire,
 	)
 
-	refreshCookie.Path = apiVersion1 + "/auth/refresh"
+	refreshCookie.Path = apiPrefixV1 + "/auth/refresh"
 
 	ctx.Cookie(accessCookie)
 	ctx.Cookie(refreshCookie)
@@ -136,7 +136,7 @@ func (h AuthHandler) logout(ctx *fiber.Ctx) error {
 		time.Now().Add(-1),
 	)
 
-	refreshCookie.Path = apiVersion1 + "/auth/refresh"
+	refreshCookie.Path = apiPrefixV1 + "/auth/refresh"
 
 	ctx.Cookie(accessCookie)
 	ctx.Cookie(refreshCookie)
