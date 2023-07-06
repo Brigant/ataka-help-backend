@@ -48,7 +48,7 @@ func (h ContactHandler) get(ctx *fiber.Ctx) error {
 	contact, err := h.Service.Obtain(ctx.Context())
 	if err != nil {
 		if errors.Is(err, structs.ErrNotFound) {
-			return fiber.NewError(fiber.StatusNoContent, err.Error())
+			return fiber.NewError(fiber.StatusNotFound, err.Error())
 		}
 
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())

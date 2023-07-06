@@ -13,20 +13,27 @@ info:
     url: "http://www.apache.org/licenses/LICENSE-2.0.html"
 servers:
   - description: For now only local server is possible
-    url: "http://localhost:7000"
+    url: "http://localhost:7000/api/v1"
 tags:
   - name: cards
     description: Card is the main entity of the information carier.
   - name: auth
     description: Operations about user authorization.
   - name: feedback
-    description: This is the endpoint through which the user can fill out the form and send feedback.
+    description: > 
+      This is the endpoint through which the user can fill 
+      out the form and send feedback.
   - name: slider
-    description: This is the endpoint to get the images for the main page slider.
+    description: >
+      This is the endpoint to get the images for the main page slider.
   - name: partners
-    description: This is the endpoint through which you need to get partner logos to the main page. The administrator can also change them.
+    description: >
+      This is the endpoint through which you need to get
+      partner logos to the main page. The administrator can also change them.
   - name: reports
-    description: This is the endpoint through which the administrator should upload the document with the activity report.
+    description: > 
+      This is the endpoint through which the administrator
+      should upload the document with the activity report.
   - name: contacts
     description: Alow to get and set contacts info
 paths:
@@ -37,7 +44,7 @@ paths:
       summary: Returns the cards array
       operationId: getAllCards
       parameters:
-        - $ref: "#/components/parameters/offset"
+        - $ref: "#/components/parameters/page"
         - $ref: "#/components/parameters/limit"
       responses:
         "200":
@@ -59,6 +66,7 @@ paths:
                       $ref: "#/components/schemas/Card"
         "400": { $ref: "#/components/responses/BadRequest" }
         "404": { $ref: "#/components/responses/NotFound" }
+        "408": { $ref: "#/components/responses/Timeout" }
         "500": { $ref: "#/components/responses/InternalError" }
     post:
       tags:
@@ -96,9 +104,10 @@ paths:
                 contentType: image/png, image/jpeg, image.jpg, image.webp      
       responses:
         "200": {$ref: "#/components/responses/Success"}
-        "400": { $ref: "#/components/responses/BadRequest" }
-        "401": { $ref: "#/components/responses/Unauthorized" }
-        "500": { $ref: "#/components/responses/InternalError" }
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "408": {$ref: "#/components/responses/Timeout"}
+        "500": {$ref: "#/components/responses/InternalError"}
       security:
         -  accessCookieAuth: []
   /cards/{id}:
@@ -118,8 +127,8 @@ paths:
                 $ref: "#/components/schemas/Card"
         "400": { $ref: "#/components/responses/BadRequest" }
         "404": { $ref: "#/components/responses/NotFound"}
+        "408": {$ref: "#/components/responses/Timeout"}
         "500": { $ref: "#/components/responses/InternalError" }
-
     delete:
       tags:
         - cards
@@ -132,6 +141,7 @@ paths:
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "404": { $ref: "#/components/responses/NotFound" }
+        "408": {$ref: "#/components/responses/Timeout"}
         "500": { $ref: "#/components/responses/InternalError" }
       security:
         -  accessCookieAuth: []
@@ -155,7 +165,7 @@ paths:
                 login:
                   type: string
                   format: email
-                  example: DaenerysTargaryen@gmail.com
+                  example: admin@example.com
                 password:
                   type: string
                   format: password
@@ -175,17 +185,20 @@ paths:
                 example: access-cookie=abcde12345; HttpOnly
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
+        "408": {$ref: "#/components/responses/Timeout"}
         "500": { $ref: "#/components/responses/InternalError" }  
   /auth/logout:
-    get:
+    post:
       tags:
         - auth
       summary: Logs out current logged in user session
       operationId: logoutUser
       responses:
-        "200": { $ref: "#/components/responses/Success" }
-        "401": { $ref: "#/components/responses/Unauthorized" }
-        "500": { $ref: "#/components/responses/InternalError" }
+        "200": {$ref: "#/components/responses/Success"}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "408": {$ref: "#/components/responses/Timeout"}
+        "500": {$ref: "#/components/responses/InternalError"}
       security: []
   /auth/refresh:
     post:
@@ -249,7 +262,9 @@ paths:
                   pattern: "^[[:graph:]]{8,14}$"
       responses:
         "200": { $ref: "#/components/responses/Success" }
-        "401": { $ref: "#/components/responses/Unauthorized" }
+        "400": { $ref: "#/components/responses/BadRequest"}
+        "401": { $ref: "#/components/responses/Unauthorized"}
+        "408": {$ref: "#/components/responses/Timeout"}
         "500": { $ref: "#/components/responses/InternalError" }
       security:
         -  accessCookieAuth: []
@@ -261,11 +276,12 @@ paths:
       summary: To get feedback from users
       operationId: addFeedback
       requestBody:
-       { $ref: "#/components/requestBodies/Feedback"}
+        {$ref: "#/components/requestBodies/Feedback"}
       responses:
-        "200": { $ref: "#/components/responses/Success" }
-        "404": { $ref: "#/components/responses/Conflict" }
-        "500": { $ref: "#/components/responses/InternalError" }
+        "200": { $ref: "#/components/responses/Success"}
+        "404": { $ref: "#/components/responses/Conflict"}
+        "408": {$ref: "#/components/responses/Timeout"}
+        "500": { $ref: "#/components/responses/InternalError"}
   
   /slider:
     get:
@@ -305,9 +321,10 @@ paths:
                         modified:
                           type: string
                           example: "2023-04-03 18:23:34"     
-        "400": { $ref: "#/components/responses/BadRequest" }
-        "404": { $ref: "#/components/responses/NotFound" }
-        "500": { $ref: "#/components/responses/InternalError" }
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        "408": {$ref: "#/components/responses/Timeout"}
+        "500": {$ref: "#/components/responses/InternalError"}
     
     post:
       tags:
@@ -315,12 +332,12 @@ paths:
       summary:  Endpoint adds the image for slider
       operationId: addSliderImage
       requestBody:
-       { $ref: "#/components/requestBodies/SliderImage"}
+       {$ref: "#/components/requestBodies/SliderImage"}
       responses:
-        "200": { $ref: "#/components/responses/Success" }
-        "401": { $ref: "#/components/responses/Unauthorized" }
-        "409": { $ref: "#/components/responses/Conflict" }
-        "500": { $ref: "#/components/responses/InternalError" }
+        "200": { $ref: "#/components/responses/Success"}
+        "401": { $ref: "#/components/responses/Unauthorized"}
+        "408": {$ref: "#/components/responses/Timeout"}
+        "500": { $ref: "#/components/responses/InternalError"}
       security:
         -  accessCookieAuth: []
   
@@ -334,10 +351,10 @@ paths:
         - $ref: "#/components/parameters/id"
       responses:
         "200": {$ref: "#/components/responses/Success"}
-        "400": { $ref: "#/components/responses/BadRequest" }
-        "401": { $ref: "#/components/responses/Unauthorized" }
-        "404": { $ref: "#/components/responses/NotFound" }
-        "500": { $ref: "#/components/responses/InternalError" }
+        "400": { $ref: "#/components/responses/BadRequest"}
+        "401": { $ref: "#/components/responses/Unauthorized"}
+        "408": {$ref: "#/components/responses/Timeout"}
+        "500": { $ref: "#/components/responses/InternalError"}
       security:
         -  accessCookieAuth: []
 
@@ -348,7 +365,7 @@ paths:
       summary: Returns an array of the partners logos 
       operationId: getAllPartnersLogos
       parameters:
-        - $ref: "#/components/parameters/offset"
+        - $ref: "#/components/parameters/page"
         - $ref: "#/components/parameters/limit"
       responses:
         "200":
@@ -367,6 +384,7 @@ paths:
                       $ref: "#/components/schemas/Partner"
         "400": { $ref: "#/components/responses/BadRequest" }
         "404": { $ref: "#/components/responses/NotFound" }
+        "408": {$ref: "#/components/responses/Timeout"}
         "500": { $ref: "#/components/responses/InternalError" }
     
     post:
@@ -379,25 +397,11 @@ paths:
       responses:
         "200": { $ref: "#/components/responses/Success" }
         "401": { $ref: "#/components/responses/Unauthorized" }
-        "409": { $ref: "#/components/responses/Conflict" }
+        "408": {$ref: "#/components/responses/Timeout"}
         "500": { $ref: "#/components/responses/InternalError" }
       security:
         -  accessCookieAuth: []
     
-    put: 
-      tags:
-        - partners
-      summary:  Changes the parthers logo
-      operationId: editePartnerInfo
-      requestBody:
-        $ref: "#/components/requestBodies/Partner"
-      responses:
-        "200": { $ref: "#/components/responses/Success" }
-        "401": { $ref: "#/components/responses/Unauthorized" }
-        "409": { $ref: "#/components/responses/Conflict" }
-        "500": { $ref: "#/components/responses/InternalError" }
-      security:
-        -  accessCookieAuth: []
   /partners/{id}:
     delete: 
       tags:
@@ -409,7 +413,7 @@ paths:
       responses:
         "200": { $ref: "#/components/responses/Success" }
         "401": { $ref: "#/components/responses/Unauthorized" }
-        "404": { $ref: "#/components/responses/NotFound" }
+        "408": {$ref: "#/components/responses/Timeout"}
         "500": { $ref: "#/components/responses/InternalError" }
       security:
         -  accessCookieAuth: []
@@ -436,6 +440,7 @@ paths:
                     items:
                       $ref: "#/components/schemas/Report"
         "204": { $ref: "#/components/responses/PartialContent" }
+        "408": {$ref: "#/components/responses/Timeout"}
         "500": { $ref: "#/components/responses/InternalError" }
 
     put: 
@@ -474,6 +479,7 @@ paths:
         "200": { $ref: "#/components/responses/Created" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "404": { $ref: "#/components/responses/NotFound" }
+        "408": {$ref: "#/components/responses/Timeout"}
         "500": { $ref: "#/components/responses/InternalError" }
       security:
         -  accessCookieAuth: []
@@ -493,6 +499,7 @@ paths:
                 $ref: "#/components/schemas/Contact"
         "400": { $ref: "#/components/responses/BadRequest" }
         "404": { $ref: "#/components/responses/NotFound"}
+        "408": {$ref: "#/components/responses/Timeout"}
         "500": { $ref: "#/components/responses/InternalError" }
     
     put:
@@ -506,7 +513,7 @@ paths:
         "200": {$ref: "#/components/responses/Success"}
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
-        "404": { $ref: "#/components/responses/NotFound" }
+        "408": {$ref: "#/components/responses/Timeout"}
         "500": { $ref: "#/components/responses/InternalError" }
       security:
         -  accessCookieAuth: []
@@ -558,7 +565,9 @@ components:
           maxLength: 50
         emailAddress:
           type: string
-          description: Email must contain the symbol @ and must not contain ru-domains such as mail.ru, yandex.ru, list.ru
+          description: >
+            Email must contain the symbol @ and must not contain 
+            ru-domains such as mail.ru, yandex.ru, list.ru
           format: email
           pattern: "^(?!.*\\.ru$)"
           example: vasya@example.com
@@ -772,11 +781,12 @@ components:
           type: string
           format: uuid
           
-    offset:
-      name: offset
+    page:
+      name: page
       in: query
-      description:  Is a parameter used in pagination to specify the starting point from where the data should be fetched.
-      required: true
+      description: >
+       Is a parameter used in pagination to specify the starting point 
+       from where the data should be fetched.
       schema:
         type: integer
         minimum: 0
@@ -785,8 +795,9 @@ components:
     limit:
       name: limit
       in: query
-      description:  Specifies the number of the objects to be displayed
-      required: true
+      description: >
+       Specifies the number of the objects 
+       to be displayed
       schema:
         type: integer
         minimum: 1
@@ -827,7 +838,9 @@ components:
                 type: string
                 example: created
     BadRequest:
-      description: It indicates that the server can not or will not process the request due to an apparent client error
+      description: >
+        It indicates that the server can not or will not process the request
+        due to an apparent client error
       content:
         application/json:
           schema:
@@ -842,8 +855,26 @@ components:
               message:
                 type: string
                 example: bad request error
+    Timeout:
+      description: It indicates that the server stop execution due to timeout
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - status
+              - message
+            properties:
+              status:
+                type: integer
+                example: 408
+              message:
+                type: string
+                example: timeout
     Unauthorized:
-        description: It indicates that the client must authenticate itself to get the requested response. 
+        description: >
+          It indicates that the client must authenticate itself to get the 
+          requested response. 
         content:
           application/json:
             schema:
@@ -859,7 +890,9 @@ components:
                   type: string
                   example: you are not authorized
     Forbiden:
-        description: It indicates that the server understands the request, but refuses to authorize it. 
+        description: >
+          It indicates that the server understands the request, 
+          but refuses to authorize it. 
         content:
           application/json:
             schema:
@@ -925,7 +958,12 @@ components:
                   type: string
                   example: the method not allowed
     Conflict:
-        description: If the object is already in the database and cannot be added because of some unique restriction. Or the same situation with editing of the some object. One more case the code can be returned if call delete operetion but there are some dependencies which conflict with the deleting.
+        description: >
+          If the object is already in the database and cannot 
+          be added because of some unique restriction. Or the same situation 
+          with editing of the some object. One more case the code can be returned 
+          if call delete operetion but there are some dependencies which conflict 
+          with the deleting.
         content:
           application/json:
             schema:
@@ -939,7 +977,9 @@ components:
                   example: 409
                 message:
                   type: string
-                  example: there is some conflinct and the operation can"t be executed
+                  example: >
+                    there is some conflinct and the operation
+                    can"t be executed
     InternalError:
         description: Bad Request
         content:

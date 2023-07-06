@@ -101,7 +101,7 @@ func (s Server) initRoutes(app *fiber.App, h Handler, cfg config.Config) {
 
 func corsConfig() cors.Config {
 	return cors.Config{
-		AllowOrigins:     `http://localhost:3000, https://ataka-help.vercel.app`,
+		AllowOrigins:     `*`,
 		AllowHeaders:     "Origin, Content-Type, Accept, Access-Control-Allow-Credentials",
 		AllowMethods:     "GET, POST, PUT, DELETE",
 		AllowCredentials: true,
