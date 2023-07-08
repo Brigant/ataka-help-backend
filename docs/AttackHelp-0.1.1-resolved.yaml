@@ -925,21 +925,6 @@ components:
                   example: not found error
     PartialContent:
         description: When nothing to return
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - code
-                - data
-              properties:
-                status:
-                  type: integer
-                  example: 206
-                data:
-                  type: array
-                  items:
-                    type: string
 
     NotAllowedMethot:
         description: A 405 error status code means "Method Not Allowed"
