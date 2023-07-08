@@ -332,7 +332,7 @@ paths:
       summary:  Endpoint adds the image for slider
       operationId: addSliderImage
       requestBody:
-       {$ref: "#/components/requestBodies/SliderImage"}
+        {$ref: "#/components/requestBodies/SliderImage"}
       responses:
         "200": { $ref: "#/components/responses/Success"}
         "401": { $ref: "#/components/responses/Unauthorized"}
@@ -531,24 +531,43 @@ components:
           format: binary
           pattern: "^.*\\.pdf$"
           description: Maximum file size must not exceed 2MB
+
+    Slider:
+      type: object
+      required:
+        - title
+        - thumb
+        - alt
+      properties:
+        title:
+          type: string
+          minLength: 10
+          maxLength: 30
+          example: "Slider title"
+        thumb:
+          $ref: "#/components/schemas/Image"
+        alt:
+          type: string
+          example: "Some text instead of photo"
   
     Partner:
       type: object
-      description: Represent object of the partner with the partner logo
+      description: Represent object of the partner with the partner thumb
       required:
-        - emailAddress
-        - emailBody
+        - title
+        - thumb
+        - alt
       properties:
-        id:
+        title:
           type: string
-          format: uuid
-          uniqueItems: true
-        text:
-          type: string
-          description: The short partner description
-          format: text
-        logo:
+          example: "Partner title"
+        thumb:
           $ref: "#/components/schemas/Image"
+        alt:
+          type: string
+          minLength: 10
+          maxLength: 30
+          example: "Some text instead of thumb"
 
     Feedback:
       type: object
@@ -650,7 +669,7 @@ components:
         file:
           type: string
           format: binary
-          pattern: "^.*\\.(jpg|webP|png)$"
+          pattern: "^.*\\.(jpg|jpeg|webP|png|svg)$"
           description: Maximum file size must not exceed 5MB
         id:
           type: string
@@ -709,22 +728,7 @@ components:
       content:
         multipart/form-data:
           schema:
-            type: object
-            required:
-              - title
-              - thumb
-              - alt
-            properties:
-              title:
-                type: string
-                minLength: 10
-                maxLength: 30
-                example: "Slider title"
-              thumb:
-                $ref: "#/components/schemas/Image"
-              alt:
-                type: string
-                example: "Some text instead of photo"
+            $ref: "#/components/schemas/Slider"
       description: Slider image object that needs to be added to the server
     
     Feedback:
