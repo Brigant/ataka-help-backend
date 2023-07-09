@@ -101,7 +101,7 @@ func (s Server) initRoutes(app *fiber.App, h Handler, cfg config.Config) {
 
 func corsConfig() cors.Config {
 	return cors.Config{
-		AllowOrigins:     `*`,
+		AllowOrigins:     `https://apiforadmin.fun, http://localhost:3000`,
 		AllowHeaders:     "Origin, Content-Type, Accept, Access-Control-Allow-Credentials",
 		AllowMethods:     "GET, POST, PUT, DELETE",
 		AllowCredentials: true,
