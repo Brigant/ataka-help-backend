@@ -14,7 +14,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/timeout"
 )
 
-const bodyLimit = 5 * 1024 * 1024
+const bodyLimit = 10 * 1024 * 1024
 
 type Server struct {
 	HTTPServer *fiber.App
