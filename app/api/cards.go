@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"mime/multipart"
 
@@ -71,7 +72,7 @@ func (h CardHandler) createCard(ctx *fiber.Ctx) error {
 		minAltItems          = 10
 		maxAltItems          = 30
 		minTitle             = 4
-		maxTitle             = 300
+		maxTitle             = 150
 		minDescription       = 3
 	)
 
@@ -105,6 +106,15 @@ func (h CardHandler) createCard(ctx *fiber.Ctx) error {
 		h.log.Debugw("createCard", "form.Vlaues", "required description")
 
 		return fiber.NewError(fiber.StatusBadRequest, "required description")
+	}
+
+	descriptions := []string{}
+
+	err = json.Unmarshal([]byte(form.Value["description"][0]), &descriptions)
+	if err != nil {
+		h.log.Debugw("Unmarshal", "description", err.Error())
+
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 
 	if err := h.Service.SaveCard(ctx.Context(), form); err != nil {
