@@ -30,6 +30,7 @@ type SMTP struct {
 	MailAccount       string `env:"SMTP_ACCOUNT"`
 	AccountPassword   string `env:"SMTP_PASSWORD"`
 	SMTPServerAddress string `env:"SMTP_ADDRESS"`
+	SMTPPort          string `env:"SMTP_PORT"`
 	CaptchaKey        string `env:"CAPTCHA_KEY"`
 }
 
