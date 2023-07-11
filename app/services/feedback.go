@@ -20,6 +20,7 @@ type FeedbackService struct {
 	message      structs.Message
 	captchaKey   string
 	smtpServer   string
+	port         string
 }
 
 func NewFeedbackService(cfg config.SMTP) (FeedbackService, error) {
@@ -47,6 +48,7 @@ func NewFeedbackService(cfg config.SMTP) (FeedbackService, error) {
 		message:      message,
 		captchaKey:   cfg.CaptchaKey,
 		smtpServer:   cfg.SMTPServerAddress,
+		port:         cfg.SMTPPort,
 	}, nil
 }
 
@@ -125,7 +127,7 @@ func (f FeedbackService) sendMail(body bytes.Buffer) error {
 	f.message.AddBody(body.String(), "text/html")
 
 	err := smtp.SendMail(
-		f.smtpServer+":587",
+		f.smtpServer+":"+f.port,
 		f.auth,
 		f.message.From,
 		[]string{f.message.To},
