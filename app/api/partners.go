@@ -134,6 +134,8 @@ func (p Partner) createPartner(ctx *fiber.Ctx) error {
 
 	if !isAllowedFileExtention(allowedFileExtentions, file[0].Filename) {
 		p.log.Debugw("createPartner", "file-name", file[0].Filename, "file-size", file[0].Size)
+
+		return fiber.NewError(fiber.StatusBadRequest, "incorrect file format")
 	}
 
 	size := file[0].Size
