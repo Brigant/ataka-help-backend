@@ -64,6 +64,7 @@ paths:
                     type: array
                     items:
                       $ref: "#/components/schemas/Card"
+        "204": {$ref: "#/components/responses/NoContent"}
         "400": { $ref: "#/components/responses/BadRequest" }
         "404": { $ref: "#/components/responses/NotFound" }
         "408": { $ref: "#/components/responses/Timeout" }
@@ -541,13 +542,15 @@ components:
       properties:
         title:
           type: string
-          minLength: 10
-          maxLength: 30
+          minLength: 4
+          maxLength: 300
           example: "Slider title"
         thumb:
           $ref: "#/components/schemas/Image"
         alt:
           type: string
+          minLength: 10
+          maxLength: 30
           example: "Some text instead of photo"
   
     Partner:
@@ -841,6 +844,22 @@ components:
               message:
                 type: string
                 example: created
+    NoContent:
+      description: Resource has no content
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - status
+              - message
+            properties:
+              status:
+                type: integer
+                example: 204
+              message:
+                type: string
+                example: no content
     BadRequest:
       description: >
         It indicates that the server can not or will not process the request
