@@ -118,6 +118,8 @@ func (s Slider) createSlide(ctx *fiber.Ctx) error {
 
 	if !isAllowedFileExtention(allowedFileExtentions, file[0].Filename) {
 		s.log.Debugw("createSlide", "file-name", file[0].Filename, "file-size", form.File["thumb"][0].Size)
+
+		return fiber.NewError(fiber.StatusBadRequest, "incorrect file format")
 	}
 
 	alt := form.Value["alt"]
