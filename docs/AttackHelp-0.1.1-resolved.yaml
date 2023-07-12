@@ -104,7 +104,7 @@ paths:
               thumb:
                 contentType: image/png, image/jpeg, image.jpg, image.webp      
       responses:
-        "200": {$ref: "#/components/responses/Success"}
+        "201": {$ref: "#/components/responses/Created"}
         "400": {$ref: "#/components/responses/BadRequest"}
         "401": {$ref: "#/components/responses/Unauthorized"}
         "408": {$ref: "#/components/responses/Timeout"}
