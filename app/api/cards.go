@@ -71,7 +71,7 @@ func (h CardHandler) createCard(ctx *fiber.Ctx) error {
 		limitNumberItemsFile = 1
 		minAltItems          = 10
 		maxAltItems          = 30
-		minTitle             = 4
+		minTitle             = 3
 		maxTitle             = 150
 		minDescription       = 3
 	)
@@ -95,9 +95,9 @@ func (h CardHandler) createCard(ctx *fiber.Ctx) error {
 
 		return fiber.NewError(fiber.StatusBadRequest, "required thumb not bigger then 5 Mb and format jpg/jpeg/webp")
 	case form.Value["title"] == nil || symbolsCounter(form.Value["title"][0]) < minTitle || symbolsCounter(form.Value["title"][0]) > maxTitle:
-		h.log.Debugw("createCard", "form.Vlaues", "required title more than 3 letters and less than 300")
+		h.log.Debugw("createCard", "form.Vlaues", "required title atleast 3 letters and less than 150")
 
-		return fiber.NewError(fiber.StatusBadRequest, "required title more than 3 letters and less than 300")
+		return fiber.NewError(fiber.StatusBadRequest, "required title atleast 3 letters and less than 150")
 	case form.Value["alt"] == nil || symbolsCounter(form.Value["alt"][0]) < minAltItems || symbolsCounter(form.Value["alt"][0]) > maxAltItems:
 		h.log.Debugw("createCard", "form.Vlaues", "alt is out of limit range")
 
