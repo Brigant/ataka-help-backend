@@ -91,9 +91,9 @@ func (h CardHandler) createCard(ctx *fiber.Ctx) error {
 
 	switch {
 	case fileHeader == nil || fileHeader.Size > fileLimit || !isAllowedFileExtention(allowedFileExtentions, fileHeader.Filename):
-		h.log.Debugw("createCard", "form.File", "required thumb not biger then 5 Mb and format jpg/jpeg/webp")
+		h.log.Debugw("createCard", "form.File", "required thumb not biger then 5 Mb and format jpg/jpeg/webp/png")
 
-		return fiber.NewError(fiber.StatusBadRequest, "required thumb not bigger then 5 Mb and format jpg/jpeg/webp")
+		return fiber.NewError(fiber.StatusBadRequest, "required thumb not bigger then 5 Mb and format jpg/jpeg/webp/png")
 	case form.Value["title"] == nil || symbolsCounter(form.Value["title"][0]) < minTitle || symbolsCounter(form.Value["title"][0]) > maxTitle:
 		h.log.Debugw("createCard", "form.Vlaues", "required title atleast 3 letters and less than 150")
 
