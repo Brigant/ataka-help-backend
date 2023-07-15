@@ -81,7 +81,7 @@ func (s Slider) getSlider(ctx *fiber.Ctx) error {
 }
 
 func (s Slider) createSlide(ctx *fiber.Ctx) error {
-	allowedFileExtentions := []string{"jpg", "jpeg", "webp", "png"}
+	allowedFileExtentions := []string{"jpg", "jpeg", "webp", "png", "svg"}
 
 	chErr := make(chan error)
 
